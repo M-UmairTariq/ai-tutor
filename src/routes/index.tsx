@@ -1,12 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAppSelector } from '@/redux/hooks';
+// import { useAppSelector } from '@/redux/hooks';
 
 // Layouts
 import { PublicLayout } from '@/components/layouts/public-layout';
 import { StudentLayout } from '@/components/layouts/student-layout';
 
 // Public Pages
-import HomePage from '@/pages/public/home';
+// import HomePage from '@/pages/public/home';
 import AboutPage from '@/pages/public/about';
 import ContactPage from '@/pages/public/contact';
 
