@@ -4,55 +4,34 @@ import { useAppSelector } from '@/redux/hooks';
 // Layouts
 import { PublicLayout } from '@/components/layouts/public-layout';
 import { StudentLayout } from '@/components/layouts/student-layout';
-import { TeacherLayout } from '@/components/layouts/teacher-layout';
 
 // Public Pages
 import HomePage from '@/pages/public/home';
 import AboutPage from '@/pages/public/about';
 import ContactPage from '@/pages/public/contact';
-import LoginPage from '@/pages/auth/login';
-import SignupPage from '@/pages/auth/signup';
 
 // Student Pages
 import StudentDashboard from '@/pages/student/dashboard';
 import StudentLearningMode from '@/pages/student/learning-mode';
-import StudentCourses from '@/pages/student/courses';
-import StudentAssignments from '@/pages/student/assignments';
-import StudentProgress from '@/pages/student/progress';
 import LearningModes from '@/pages/student/learning-modes';
 
-// Teacher Pages
-import TeacherDashboard from '@/pages/teacher/dashboard';
-import TeacherCourses from '@/pages/teacher/courses';
-import TeacherStudents from '@/pages/teacher/students';
-import TeacherAssignments from '@/pages/teacher/assignments';
-import TeacherAnalytics from '@/pages/teacher/analytics';
+// Auth Pages
+import { AuthLayout } from '@/components/layouts/auth-layout';
+import LoginPage from '@/pages/auth/login';
+import SignupPage from '@/pages/auth/signup';
 
 const AppRoutes = () => {
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  // const { user } = useAppSelector((state) => state.auth);
 
   // Protected route component for students
   const StudentRoute = ({ children }: { children: JSX.Element }) => {
-    if (!isAuthenticated) {
-      return <Navigate to="/login" replace />;
-    }
+    // if (!isAuthenticated) {
+    //   return <Navigate to="/login" replace />;
+    // }
 
-    if (user?.role !== 'student') {
-      return <Navigate to="/" replace />;
-    }
-
-    return children;
-  };
-
-  // Protected route component for teachers
-  const TeacherRoute = ({ children }: { children: JSX.Element }) => {
-    if (!isAuthenticated) {
-      return <Navigate to="/login" replace />;
-    }
-
-    if (user?.role !== 'teacher') {
-      return <Navigate to="/" replace />;
-    }
+    // if (user?.role !== 'student') {
+    //   return <Navigate to="/" replace />;
+    // }
 
     return children;
   };
@@ -64,7 +43,7 @@ const AppRoutes = () => {
         path="/"
         element={
           <PublicLayout>
-            <HomePage />
+            <Navigate to={"/login"} />
           </PublicLayout>
         }
       />
@@ -87,23 +66,23 @@ const AppRoutes = () => {
       <Route
         path="/login"
         element={
-          <PublicLayout>
+          <AuthLayout>
             <LoginPage />
-          </PublicLayout>
+          </AuthLayout>
         }
       />
       <Route
         path="/signup"
         element={
-          <PublicLayout>
+          <AuthLayout>
             <SignupPage />
-          </PublicLayout>
+          </AuthLayout>
         }
       />
 
       {/* Student Routes */}
       <Route
-        path="/student/dashboard"
+        path=""
         element={
           <StudentRoute>
             <StudentLayout>
@@ -113,7 +92,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/student/learning-mode"
+        path=""
         element={
           <StudentRoute>
             <StudentLayout>
@@ -132,90 +111,7 @@ const AppRoutes = () => {
           </StudentRoute>
         }
       />
-      <Route
-        path="/student/courses"
-        element={
-          <StudentRoute>
-            <StudentLayout>
-              <StudentCourses />
-            </StudentLayout>
-          </StudentRoute>
-        }
-      />
-      <Route
-        path="/student/assignments"
-        element={
-          <StudentRoute>
-            <StudentLayout>
-              <StudentAssignments />
-            </StudentLayout>
-          </StudentRoute>
-        }
-      />
-      <Route
-        path="/student/progress"
-        element={
-          <StudentRoute>
-            <StudentLayout>
-              <StudentProgress />
-            </StudentLayout>
-          </StudentRoute>
-        }
-      />
 
-      {/* Teacher Routes */}
-      <Route
-        path="/teacher/dashboard"
-        element={
-          <TeacherRoute>
-            <TeacherLayout>
-              <TeacherDashboard />
-            </TeacherLayout>
-          </TeacherRoute>
-        }
-      />
-      <Route
-        path="/teacher/courses"
-        element={
-          <TeacherRoute>
-            <TeacherLayout>
-              <TeacherCourses />
-            </TeacherLayout>
-          </TeacherRoute>
-        }
-      />
-      <Route
-        path="/teacher/students"
-        element={
-          <TeacherRoute>
-            <TeacherLayout>
-              <TeacherStudents />
-            </TeacherLayout>
-          </TeacherRoute>
-        }
-      />
-      <Route
-        path="/teacher/assignments"
-        element={
-          <TeacherRoute>
-            <TeacherLayout>
-              <TeacherAssignments />
-            </TeacherLayout>
-          </TeacherRoute>
-        }
-      />
-      <Route
-        path="/teacher/analytics"
-        element={
-          <TeacherRoute>
-            <TeacherLayout>
-              <TeacherAnalytics />
-            </TeacherLayout>
-          </TeacherRoute>
-        }
-      />
-
-      {/* Catch-all route */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

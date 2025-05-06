@@ -47,26 +47,26 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      const resultAction = await dispatch(
-        login({
-          email: data.email,
-          password: data.password,
-        })
-      );
+      // const resultAction = await dispatch(
+      //   login({
+      //     email: data.email,
+      //     password: data.password,
+      //   })
+      // );
 
-      if (login.fulfilled.match(resultAction)) {
+      // if (login.fulfilled.match(resultAction)) {
         toast.success('Login successful');
-        const user = resultAction.payload.user;
+        // const user = resultAction.payload.user;
         
         // Redirect based on user role
-        if (user.role === 'student') {
-          navigate('/student/dashboard');
-        } else if (user.role === 'teacher') {
-          navigate('/teacher/dashboard');
-        } else {
-          navigate('/');
-        }
-      }
+        // if (user.role === 'student') {
+          navigate('/student/learning-modes');
+        // } else if (user.role === 'teacher') {
+          // navigate('/teacher/dashboard');
+        // } else {
+          // navigate('/');
+        // }
+      // }
     } catch (error) {
       console.error('Login failed:', error);
     }
