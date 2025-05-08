@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,9 +12,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+// import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { BookOpen, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { login } from '@/redux/slices/authSlice';
 
@@ -27,6 +26,9 @@ const formSchema = z.object({
     message: 'Password must be at least 8 characters',
   }),
   rememberMe: z.boolean().optional(),
+  name: z.string().min(1, {
+    message: 'Name is required',
+  })
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -54,18 +56,20 @@ export default function LoginPage() {
       //   })
       // );
 
+      console.log('Login result:', data);
+
       // if (login.fulfilled.match(resultAction)) {
-        toast.success('Login successful');
-        // const user = resultAction.payload.user;
-        
-        // Redirect based on user role
-        // if (user.role === 'student') {
-          navigate('/student/learning-modes');
-        // } else if (user.role === 'teacher') {
-          // navigate('/teacher/dashboard');
-        // } else {
-          // navigate('/');
-        // }
+      toast.success('Login successful');
+      // const user = resultAction.payload.user;
+
+      // Redirect based on user role
+      // if (user.role === 'student') {
+      navigate('/student/learning-modes');
+      // } else if (user.role === 'teacher') {
+      // navigate('/teacher/dashboard');
+      // } else {
+      // navigate('/');
+      // }
       // }
     } catch (error) {
       console.error('Login failed:', error);
@@ -73,18 +77,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-64px)]">
-      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center">
-        <div className="mx-auto max-w-md w-full p-6">
-          <div className="mb-8 text-center">
-            <div className="flex justify-center mb-3">
-              <BookOpen className="h-10 w-10 text-[var(--primarybg)]" />
-            </div>
-            <h1 className="text-3xl font-bold text-[var(--font-dark)]">
+    <div className="flex flex-col min-h-[calc(100vh-64px)] justify-center" >
+      <div className="flex items-center bg-white max-w-xl mx-auto rounded-2xl mb-[-5rem] shadow-sm">
+        <div className="mx-auto max-w-md w-full p-8 md:px-[64px] md:py-[44px]">
+          <div className="mb-8">
+            <h1 className=" text-3xl md:text-4xl font-sans font-medium text-[var(--font-dark)]">
               Welcome back
             </h1>
             <p className="mt-2 text-[var(--font-light2)]">
-              Sign in to your account to continue
+              Please enter your credentials to continue.
             </p>
           </div>
 
@@ -95,22 +96,26 @@ export default function LoginPage() {
           )}
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 ">
               <FormField
                 control={form.control}
-                name="email"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-[var(--font-dark)] font-semibold">Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your email address" {...field} />
+                      <Input
+                        className="h-14 rounded-sm"  // increase height here
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
+
+              {/* <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (
@@ -130,9 +135,9 @@ export default function LoginPage() {
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
 
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="rememberMe"
                 render={({ field }) => (
@@ -148,25 +153,26 @@ export default function LoginPage() {
                     </FormLabel>
                   </FormItem>
                 )}
-              />
+              /> */}
 
               <Button
                 type="submit"
-                className="w-full bg-[var(--primarybg)] hover:bg-[var(--primarybg)]/90"
+                className="w-full bg-[var(--primarybg)] hover:bg-[var(--primarybg)]/90 rounded-full h-14 text-white font-semibold flex items-center justify-center mt-2"
                 disabled={loading}
+              // onClick={handleSubmit}
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...
                   </>
                 ) : (
-                  'Sign In'
+                  'Log In'
                 )}
               </Button>
             </form>
           </Form>
 
-          <div className="mt-6 text-center">
+          {/* <div className="mt-6 text-center">
             <p className="text-sm text-[var(--font-light2)]">
               Don't have an account?{' '}
               <Link
@@ -176,13 +182,13 @@ export default function LoginPage() {
                 Sign up
               </Link>
             </p>
-          </div>
+          </div> */}
 
-          <div className="mt-6 text-center text-xs text-[var(--font-light2)]">
+          {/* <div className="mt-6 text-center text-xs text-[var(--font-light2)]">
             <p className="mb-1">For demo purposes, use these credentials:</p>
             <p>Student: student@example.com / password123</p>
             <p>Teacher: teacher@example.com / password123</p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

@@ -14,12 +14,16 @@ export default {
       screens: {
         sm: '640px',
         md: '768px',
-        lg: '1024px',
-        xl: '1280px',
-        '2xl': '1536px',
+        lg: '1400px',
+        xl: '1680px',
       },
     },
     extend: {
+
+      fontFamily: {
+        sans: ['Outfit', 'sans-serif'], // use Outfit as the default
+      },
+
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',

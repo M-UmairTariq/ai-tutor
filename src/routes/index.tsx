@@ -1,24 +1,25 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAppSelector } from '@/redux/hooks';
+// import { useAppSelector } from '@/redux/hooks';
 
 // Layouts
 import { PublicLayout } from '@/components/layouts/public-layout';
 import { StudentLayout } from '@/components/layouts/student-layout';
 
 // Public Pages
-import HomePage from '@/pages/public/home';
+// import HomePage from '@/pages/public/home';
 import AboutPage from '@/pages/public/about';
 import ContactPage from '@/pages/public/contact';
 
 // Student Pages
 import StudentDashboard from '@/pages/student/dashboard';
-import StudentLearningMode from '@/pages/student/learning-mode';
 import LearningModes from '@/pages/student/learning-modes';
 
 // Auth Pages
 import { AuthLayout } from '@/components/layouts/auth-layout';
 import LoginPage from '@/pages/auth/login';
 import SignupPage from '@/pages/auth/signup';
+import ChatModeTopics from '@/pages/student/topics/ChatModeTopics';
+import PhotoModeTopics from '@/pages/student/topics/PhotoModeTopics';
 
 const AppRoutes = () => {
   // const { user } = useAppSelector((state) => state.auth);
@@ -91,22 +92,33 @@ const AppRoutes = () => {
           </StudentRoute>
         }
       />
-      <Route
-        path=""
-        element={
-          <StudentRoute>
-            <StudentLayout>
-              <StudentLearningMode />
-            </StudentLayout>
-          </StudentRoute>
-        }
-      />
+      
       <Route
         path="/student/learning-modes"
         element={
           <StudentRoute>
             <StudentLayout>
               <LearningModes />
+            </StudentLayout>
+          </StudentRoute>
+        }
+      />
+      <Route
+        path="/student/learning-modes/chat-mode"
+        element={
+          <StudentRoute>
+            <StudentLayout>
+              <ChatModeTopics />
+            </StudentLayout>
+          </StudentRoute>
+        }
+      />
+      <Route
+        path="/student/learning-modes/photo-mode"
+        element={
+          <StudentRoute>
+            <StudentLayout>
+              <PhotoModeTopics />
             </StudentLayout>
           </StudentRoute>
         }
