@@ -49,12 +49,12 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      const resultAction = await dispatch(
-        login({
-          email: data.email,
-          password: data.password,
-        })
-      );
+      // const resultAction = await dispatch(
+      //   login({
+      //     email: data.email,
+      //     password: data.password,
+      //   })
+      // );
 
       console.log('Login result:', data);
 

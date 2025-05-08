@@ -1,31 +1,31 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppSelector } from '@/redux/hooks';
+// import { useAppSelector } from '@/redux/hooks';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
   BookOpen,
   BarChart2,
-  LogOut,
-  Bell,
+  // LogOut,
+  // Bell,
   Menu,
   X,
   Brain,
 } from 'lucide-react';
-import { ThemeToggle } from '@/components/theme-toggle';
+// import { ThemeToggle } from '@/components/theme-toggle';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useDispatch } from 'react-redux';
-import { logout } from '@/redux/slices/authSlice';
+// import {
+//   DropdownMenu,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+//   DropdownMenuLabel,
+//   DropdownMenuSeparator,
+//   DropdownMenuTrigger,
+// } from '@/components/ui/dropdown-menu';
+// import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+// import { useDispatch } from 'react-redux';
+// import { logout } from '@/redux/slices/authSlice';
 
 interface StudentLayoutProps {
   children: ReactNode;
@@ -34,7 +34,7 @@ interface StudentLayoutProps {
 export function StudentLayout({ children }: StudentLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   // const dispatch = useDispatch();
   
   // const { user, isAuthenticated } = useAppSelector((state) => state.auth);
@@ -149,7 +149,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64 flex flex-col flex-1">
         {/* Top header */}
-        <header className="sticky top-0 z-10 flex md:hidden items-center justify-between h-16 px-4 border-b bg-background lg:px-8">
+        <header className="sticky top-0 z-10 flex lg:hidden items-center justify-between h-16 px-4 border-b bg-background lg:px-8">
           <Button
             variant="ghost"
             size="icon"
@@ -159,7 +159,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
             <Menu className="h-6 w-6" />
           </Button>
         </header>
-        <header className="sticky top-0 z-10 hidden md:flex items-center justify-between h-16 bg-background py-12 border-b-2 px-16 ">
+        <header className="sticky top-0 z-10 hidden lg:flex items-center justify-between h-16 bg-background py-10 border-b px-16 ">
         <h1 className="text-3xl font-bold">Chat Mode</h1>
           <div>MENU</div>
         </header>
