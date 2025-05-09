@@ -12,11 +12,18 @@ import {
   Menu,
   X,
   Brain,
+  ChevronLeft,
+  Bell,
+  Settings,
+  ChevronDown,
+  Languages,
+  LogOut,
 } from 'lucide-react';
 // import { ThemeToggle } from '@/components/theme-toggle';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAppSelector } from '@/redux/hooks';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { logout } from '@/redux/slices/authSlice';
+import { toast } from 'sonner';
 // import {
 //   DropdownMenu,
 //   DropdownMenuContent,
@@ -37,9 +44,19 @@ export function StudentLayout({ children }: StudentLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  
+  const dispatch = useAppDispatch();
+
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const pathSegments = location.pathname.split("/").filter(Boolean);
+  const lastSegment = pathSegments[pathSegments.length - 1] || "";
+
+  // Capitalize each word
+  const formattedTitle = lastSegment
+    .split("-")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -54,7 +71,8 @@ export function StudentLayout({ children }: StudentLayoutProps) {
   };
 
   const handleLogout = async () => {
-    // await dispatch(logout());
+    await dispatch(logout());
+    toast.success('Logged out successfully');
     navigate('/login');
   };
 
@@ -68,50 +86,48 @@ export function StudentLayout({ children }: StudentLayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-background ">
-          <div 
-          className={`fixed inset-0 z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      <div
+        className={`fixed inset-0 z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
-        >
-          <div
-            className="fixed inset-0 bg-black/50"
-            onClick={() => setSidebarOpen(false)}
-          ></div>
-          <nav className="fixed top-0 left-0 bottom-0 w-72 bg-[#065FF0] p-8 rounded-3xl my-6">
-            <div className="flex items-center justify-between mb-8 text-white">
-              <Link to="/student/dashboard" className="flex items-center gap-2 text-2xl font-bold">
-                AI Tutor.
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarOpen(false)}
-                className="text-white hover:bg-blue-600"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            <ScrollArea className="h-[calc(100vh-8rem)] mt-16">
-              <div className="space-y-8">
-                {sidebarItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-md text-md font-bold transition-colors ${
-                      isActive(item.path)
-                        ? 'bg-[#065FF0]/10 text-white'
-                        : 'text-white hover:bg-white/10 hover:text-white'
+      >
+        <div
+          className="fixed inset-0 bg-black/50"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+        <nav className="fixed top-0 left-0 bottom-0 w-72 bg-[#065FF0] p-8 rounded-3xl my-6">
+          <div className="flex items-center justify-between mb-8 text-white">
+            <Link to="/student/dashboard" className="flex items-center gap-2 text-2xl font-bold">
+              AI Tutor.
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(false)}
+              className="text-white hover:bg-blue-600"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <ScrollArea className="h-[calc(100vh-8rem)] mt-16">
+            <div className="space-y-8">
+              {sidebarItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-md font-bold transition-colors ${isActive(item.path)
+                    ? 'bg-[#065FF0]/10 text-white'
+                    : 'text-white hover:bg-white/10 hover:text-white'
                     }`}
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <item.icon className="h-5 w-5 text-white font-bold" />
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </ScrollArea>
-          </nav>
-        </div>
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <item.icon className="h-5 w-5 text-white font-bold" />
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </ScrollArea>
+        </nav>
+      </div>
       {/* )} */}
 
       {/* Sidebar for desktop */}
@@ -127,11 +143,10 @@ export function StudentLayout({ children }: StudentLayoutProps) {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-md font-medium transition-colors ${
-                  isActive(item.path)
-                    ? 'bg-white/10 text-white font-bold'
-                    : 'text-white hover:bg-white/10 hover:text-white'
-                }`}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-md font-medium transition-colors ${isActive(item.path)
+                  ? 'bg-white/10 text-white font-bold'
+                  : 'text-white hover:bg-white/10 hover:text-white'
+                  }`}
               >
                 <item.icon className="h-5 w-5 font-bold" />
                 {item.label}
@@ -144,7 +159,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64 flex flex-col flex-1">
         {/* Top header */}
-        <header className="sticky top-0 z-10 flex lg:hidden items-center justify-between h-16 px-4 border-b bg-background lg:px-8">
+        <header className="sticky top-0 z-10 flex lg:hidden items-center justify-between h-16 px-4 bg-background lg:px-8">
           <Button
             variant="ghost"
             size="icon"
@@ -154,9 +169,52 @@ export function StudentLayout({ children }: StudentLayoutProps) {
             <Menu className="h-6 w-6" />
           </Button>
         </header>
-        <header className="sticky top-0 z-10 hidden lg:flex items-center justify-between h-16 bg-background py-10 border-b px-16 ">
-        <h1 className="text-3xl font-bold">Chat Mode</h1>
-          <div>MENU</div>
+        <header className="sticky top-0 z-10 hidden lg:flex items-center justify-between h-16 bg-background py-10 px-8 ">
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="mr-2"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-2xl font-bold">{ formattedTitle }</h1>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Notification */}
+            {/* <Button size="sm" variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 w-10 p-0 flex items-center justify-center">
+              <Bell className="w-5 h-5" />
+            </Button> */}
+
+            {/* User Info */}
+            {/* <div className="flex items-center gap-2 bg-[#F8F9FD] px-3 py-1 rounded-full h-10">
+              <img
+                src="https://i.pravatar.cc/30"
+                alt="user"
+                className="w-7 h-7 rounded-full object-cover"
+              />
+              <div className="flex flex-col justify-center">
+                <span className="text-xs font-semibold leading-tight">hanry</span>
+                <span className="text-xs text-gray-500 leading-tight">hanry463@gmail.com</span>
+              </div>
+              <Button size="icon" variant="ghost" className="rounded-full p-0 h-6 w-6 ml-1">
+                <Settings className="w-4 h-4" />
+              </Button>
+            </div> */}
+
+            {/* Language */}
+            {/* <Button variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 flex items-center px-3 py-0">
+              <Languages className="w-5 h-5" />
+              <ChevronDown className="w-4 h-4 ml-1" />
+            </Button> */}
+
+            {/* Logout */}
+            <Button onClick={handleLogout} size="sm" variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 w-10 p-0 flex items-center justify-center">
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
         </header>
 
         {/* Main Content */}
