@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchTopics } from '@/redux/slices/topicsSlice';
@@ -17,16 +17,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 const ChatModeTopics = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  
+
   const { topics, isLoading, error } = useAppSelector((state) => state.topics);
   const { user } = useAppSelector((state) => state.auth);
-  
+
   useEffect(() => {
     if (user?.id) {
       dispatch(fetchTopics({ userId: user.id, topicMode: 'chat-mode' }));
     }
   }, [dispatch, user]);
-  
+
   useEffect(() => {
     if (error) {
       toast.error(error);
@@ -41,7 +41,7 @@ const ChatModeTopics = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
+      {/* <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
           <Button 
             variant="ghost" 
@@ -62,7 +62,7 @@ const ChatModeTopics = () => {
         >
           <LogOut className="h-5 w-5" />
         </Button>
-      </div>
+      </div> */}
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -93,18 +93,22 @@ const ChatModeTopics = () => {
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 </div>
-                
+
                 <CardContent className="flex-grow p-4">
                   <h3 className="font-medium text-base">{topic.topicName}</h3>
                 </CardContent>
-                
+
                 <CardFooter className="flex justify-end p-4 pt-0">
-                  <Button 
-                    size="sm"
-                    onClick={() => navigate(`/student/learning-mode/${topic.id}?mode=chat-mode`)}
-                  >
-                    Start
-                  </Button>
+                  <Link to={`/student/learning-mode/${topic?.id}?mode=chat-mode`} >
+
+                    <Button
+                      size="sm"
+                      // onClick={() => navigate(`/student/learning-mode/${topic.id}?mode=chat-mode`)}
+                    >
+                      Start
+                    </Button>
+
+                  </Link>
                 </CardFooter>
               </Card>
             ))
