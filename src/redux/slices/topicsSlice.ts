@@ -7,7 +7,6 @@ export interface Topic {
   topicName: string;
   attachmentUrl: string;
   description?: string;
-  // Add other properties as needed
 }
 
 interface TopicsState {

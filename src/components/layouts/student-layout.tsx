@@ -1,6 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import { useAppSelector } from '@/redux/hooks';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,13 +12,12 @@ import {
   X,
   Brain,
   ChevronLeft,
-  Bell,
-  Settings,
-  ChevronDown,
-  Languages,
+  // Bell,
+  // Settings,
+  // ChevronDown,
+  // Languages,
   LogOut,
 } from 'lucide-react';
-// import { ThemeToggle } from '@/components/theme-toggle';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { logout } from '@/redux/slices/authSlice';
