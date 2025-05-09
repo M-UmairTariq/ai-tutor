@@ -1,154 +1,87 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 
-// Types
 export type UserRole = 'student' | 'teacher';
 
 export interface User {
   id: string;
-  name: string;
-  email: string;
-  role: UserRole;
+  username: string;
+  phoneNumber: string;
+  role?: UserRole;
+}
+
+export interface AuthResponse {
+  status: string;
+  message: string;
+  user: User;
+  token?: string; // Optional token if API provides it
+}
+
+export interface LoginCredentials {
+  username: string;
 }
 
 interface AuthState {
   user: User | null;
   token: string | null;
-  isAuthenticated: boolean;
-  loading: boolean;
+  isLoading: boolean;
   error: string | null;
+  isAuthenticated: boolean;
 }
 
-// Helper functions
-const loadUserFromStorage = (): { user: User | null; token: string | null } => {
-  try {
-    const userStr = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    return {
-      user: userStr ? JSON.parse(userStr) : null,
-      token,
-    };
-  } catch (error) {
-    console.error('Failed to load user from storage:', error);
-    return { user: null, token: null };
-  }
-};
-
-// Initial state
-const { user, token } = loadUserFromStorage();
-
+// Initialize state from localStorage
 const initialState: AuthState = {
-  user,
-  token,
-  isAuthenticated: !!user && !!token,
-  loading: false,
+  user: JSON.parse(localStorage.getItem('AiTutorUser') || 'null'),
+  token: localStorage.getItem('token'),
+  isLoading: false,
   error: null,
+  isAuthenticated: Boolean(localStorage.getItem('AiTutorUser')),
 };
 
-// Async thunks
 export const login = createAsyncThunk(
   'auth/login',
-  async (
-    credentials: { email: string; password: string },
-    { rejectWithValue }
-  ) => {
+  async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
-      // Simulating API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // For demo purposes - in a real app this would come from a backend
-      // Hardcoded users for demo
-      const users = [
-        {
-          id: '1',
-          name: 'John Student',
-          email: 'student@example.com',
-          password: 'password123',
-          role: 'student' as UserRole,
-        },
-        {
-          id: '2',
-          name: 'Jane Teacher',
-          email: 'teacher@example.com',
-          password: 'password123',
-          role: 'teacher' as UserRole,
-        },
-      ];
-
-      const user = users.find((u) => u.email === credentials.email);
-
-      if (!user || user.password !== credentials.password) {
-        return rejectWithValue('Invalid email or password');
-      }
-
-      const { password, ...userWithoutPassword } = user;
-      const token = `demo-token-${Math.random().toString(36).substring(2, 15)}`;
-
-      // Store in localStorage
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-      localStorage.setItem('token', token);
-
-      return {
-        user: userWithoutPassword,
-        token,
+      const response = await axios.post('https://tutorapp-cyfeg4ghe7gydbcy.uaenorth-01.azurewebsites.net/api/auth/login', credentials);
+      
+      const data = response.data as AuthResponse;
+      
+      const userWithRole = {
+        ...data.user,
+        role: 'student' as UserRole
       };
-    } catch (error) {
-      if (error instanceof Error) {
-        return rejectWithValue(error.message);
+      
+      localStorage.setItem('AiTutorUser', JSON.stringify(userWithRole));
+      
+      if (data.token) {
+        localStorage.setItem('token', data.token);
       }
-      return rejectWithValue('An unknown error occurred');
+      
+      return {
+        user: userWithRole,
+        token: data.token || null,
+        message: data.message
+      };
+    } catch (error: any) {
+      // Handle errors from the API
+      if (error.response && error.response.data) {
+        return rejectWithValue(error.response.data.message || 'An unknown error occurred');
+      }
+      return rejectWithValue(error.message || 'An unknown error occurred');
     }
   }
 );
 
-export const register = createAsyncThunk(
-  'auth/register',
-  async (
-    userData: {
-      name: string;
-      email: string;
-      password: string;
-      role: UserRole;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      // Simulating API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // For demo - in a real app this would be stored in a database
-      const newUser = {
-        id: Math.random().toString(36).substring(2, 15),
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-      };
-
-      const token = `demo-token-${Math.random().toString(36).substring(2, 15)}`;
-
-      // Store in localStorage
-      localStorage.setItem('user', JSON.stringify(newUser));
-      localStorage.setItem('token', token);
-
-      return {
-        user: newUser,
-        token,
-      };
-    } catch (error) {
-      if (error instanceof Error) {
-        return rejectWithValue(error.message);
-      }
-      return rejectWithValue('An unknown error occurred');
-    }
-  }
-);
-
-export const logout = createAsyncThunk('auth/logout', async () => {
-  localStorage.removeItem('user');
+// Logout thunk
+export const logout = createAsyncThunk('auth/logout', async (_, { }) => {
+  // Clear localStorage
+  localStorage.removeItem('AiTutorUser');
   localStorage.removeItem('token');
+  
   return null;
 });
 
-// Slice
+// Auth slice
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -161,39 +94,20 @@ const authSlice = createSlice({
     builder
       // Login
       .addCase(login.pending, (state) => {
-        state.loading = true;
+        state.isLoading = true;
         state.error = null;
       })
-      .addCase(
-        login.fulfilled,
-        (state, action: PayloadAction<{ user: User; token: string }>) => {
-          state.loading = false;
-          state.user = action.payload.user;
-          state.token = action.payload.token;
-          state.isAuthenticated = true;
-        }
-      )
+      .addCase(login.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
       .addCase(login.rejected, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
         state.error = action.payload as string;
-      })
-      // Register
-      .addCase(register.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(
-        register.fulfilled,
-        (state, action: PayloadAction<{ user: User; token: string }>) => {
-          state.loading = false;
-          state.user = action.payload.user;
-          state.token = action.payload.token;
-          state.isAuthenticated = true;
-        }
-      )
-      .addCase(register.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        state.isAuthenticated = false;
       })
       // Logout
       .addCase(logout.fulfilled, (state) => {
@@ -205,5 +119,4 @@ const authSlice = createSlice({
 });
 
 export const { clearError } = authSlice.actions;
-
 export default authSlice.reducer;

@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 // import { useAppSelector } from '@/redux/hooks';
 import { Link, useLocation } from 'react-router-dom';
@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 // import { ThemeToggle } from '@/components/theme-toggle';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAppSelector } from '@/redux/hooks';
+import { useDispatch } from 'react-redux';
 // import {
 //   DropdownMenu,
 //   DropdownMenuContent,
@@ -34,45 +36,38 @@ interface StudentLayoutProps {
 export function StudentLayout({ children }: StudentLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  // const navigate = useNavigate();
-  // const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   
-  // const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
-  // useEffect(() => {
-  //   if (!isAuthenticated) {
-  //     navigate('/login');
-  //   } else if (user?.role !== 'student') {
-  //     navigate('/');
-  //   }
-  // }, [isAuthenticated, user, navigate]);
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    } else if (user?.role !== 'student') {
+      navigate('/');
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const isActive = (path: string) => {
     return location.pathname === path;
   };
 
-  // const handleLogout = async () => {
-  //   // await dispatch(logout());
-  //   navigate('/login');
-  // };
+  const handleLogout = async () => {
+    // await dispatch(logout());
+    navigate('/login');
+  };
 
   const sidebarItems = [
     { path: '/student/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/student/progress', icon: BarChart2, label: 'Progress' },
     { path: '/student/learning-modes', icon: Brain, label: 'Learning Modes' },
+    { path: '/student/leaderboard', icon: Brain, label: 'Leaderboard' },
     { path: '/student/support', icon: BookOpen, label: 'Support' },
   ];
 
   return (
     <div className="flex min-h-screen bg-background ">
-      {/* Sidebar for mobile */}
-      {/* {sidebarOpen && ( */}
-        {/* <div className={`${sidebarOpen ? "left-0" : "left-[400px]"} fixed inset-0 z-50 lg:hidden1`}>
-          <div
-            className="fixed inset-0 bg-black/50"
-            onClick={() => setSidebarOpen(false)}
-          ></div>
-          <nav className="fixed top-0 left-0 bottom-0 w-72 bg-[#065FF0] p-8 rounded-3xl my-6"> */}
           <div 
           className={`fixed inset-0 z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
