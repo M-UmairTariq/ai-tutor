@@ -225,7 +225,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
               </Select>
             </div>
             
-            <div className="w-full">
+            {/* <div className="w-full">
               <Select value={ranking} onValueChange={setRanking}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Ranking" />
@@ -236,9 +236,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
                   <SelectItem value="top20">Top 20</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </div> */}
             
-            <div className="w-full">
+            {/* <div className="w-full">
               <Select value={section} onValueChange={setSection}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Section" />
@@ -250,7 +250,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </div> */}
             
             <Button 
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"

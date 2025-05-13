@@ -17,11 +17,10 @@ import LearningModes from '@/pages/student/learning-modes';
 // Auth Pages
 import { AuthLayout } from '@/components/layouts/auth-layout';
 import LoginPage from '@/pages/auth/login';
-import SignupPage from '@/pages/auth/signup';
 import ChatModeTopics from '@/pages/student/topics/ChatModeTopics';
 import PhotoModeTopics from '@/pages/student/topics/PhotoModeTopics';
 import Leaderboard from '@/pages/student/Leaderboard';
-import ChatWindow from '@/pages/student/ChatWindow';
+import ChatWindowComponent from '@/pages/student/ChatWindow';
 
 const AppRoutes = () => {
   // const { user } = useAppSelector((state) => state.auth);
@@ -140,7 +139,8 @@ const AppRoutes = () => {
         element={
           <StudentRoute>
             <StudentLayout>
-              <ChatWindow />
+              afadsfs
+              <ChatWindowComponent />
             </StudentLayout>
           </StudentRoute>
         }

@@ -636,8 +636,7 @@ interface ChatWindowComponentProps {
 }
 
 const ChatWindowComponent: React.FC<ChatWindowComponentProps> = (/* { chatSessionIdProp } */) => {
-  const dispatch: AppDispatch = useDispatch(); // Use AppDispatch for typed dispatch
-  
+  const dispatch: AppDispatch = useDispatch();
   // Select state from Redux store
   const {
     messages,
@@ -645,8 +644,8 @@ const ChatWindowComponent: React.FC<ChatWindowComponentProps> = (/* { chatSessio
     isLoading,
     isSending,
     error,
-    currentChatSessionId, // Session ID from Redux state
-    isOpen, // Visibility state from Redux
+    currentChatSessionId,
+    isOpen, 
   } = useSelector((state: RootState) => state.chatWindow);
 
   const scrollViewportRef = useRef<HTMLDivElement>(null); // Ref for the ScrollArea's viewport
@@ -720,7 +719,8 @@ const ChatWindowComponent: React.FC<ChatWindowComponentProps> = (/* { chatSessio
       </CardHeader>
 
       <CardContent className="flex-grow p-0 overflow-hidden">
-        <ScrollArea className="h-full w-full" viewportRef={scrollViewportRef}>
+        {/* <ScrollArea className="h-full w-full" viewportRef={scrollViewportRef}> */}
+        <ScrollArea className="h-full w-full">
           <div className="p-4 space-y-4">
             {isLoading && messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
