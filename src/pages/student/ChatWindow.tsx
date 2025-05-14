@@ -98,6 +98,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
   const mode = searchParams.get("mode");
 
   const userData = JSON.parse(localStorage.getItem("AiTutorUser") || "{}");
+  console.log("USER DATA: ", userData);
   const userId = userData?.id;
   const WS_URL = import.meta.env.VITE_API_BASE_URL.replace(/^http/, "ws");
   const navigate = useNavigate();
