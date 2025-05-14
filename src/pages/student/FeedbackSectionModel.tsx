@@ -59,7 +59,7 @@ const FeedbackSectionModal: React.FC<FeedbackSectionModalProps> = ({ isOpen, onC
     const needsTips = metrics.filter(m => m.score < 80);
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 md:hidden">
         <h4 className="text-sm font-medium text-gray-700">Your Speech Assessment</h4>
 
         <div className="border rounded p-3 mb-2 bg-gray-50">
@@ -125,7 +125,9 @@ const FeedbackSectionModal: React.FC<FeedbackSectionModalProps> = ({ isOpen, onC
           {feedback ? (
             isAssessment
               ? renderAssessment(parsedAssessment as Assessment)
-              : <p className="text-gray-700">{feedback.content as string}</p>
+              : <p className="bg-gradient-to-r from-violet-500 to-blue-400 bg-clip-text text-transparent">
+                  {feedback.content as string}
+                </p>    
           ) : (
             <p className="text-gray-600">
               Click the "View Feedback" or "View Assessment" button on any message to see details here.

@@ -33,7 +33,7 @@ const LearningModes: React.FC = () => {
         {modes.map((mode, index) => (
           <div
             key={index}
-            className="flex flex-col lg:flex-row  border border-gray-150 rounded-3xl p-4 lg:p-8 bg-white hover:shadow-md transition-shadow duration-300"
+            className="flex flex-col lg:flex-row  border border-gray-150 rounded-3xl p-4 bg-white hover:shadow-md transition-shadow duration-300"
           >
             {/* Top row for mobile/tablet/small screens */}
             <div className="flex w-full items-center justify-between mb-4 lg:hidden">

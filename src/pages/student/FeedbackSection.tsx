@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, BarChart } from 'lucide-react';
+import { BarChart } from 'lucide-react';
 
 interface Assessment {
   accuracyScore: number;
@@ -16,11 +16,11 @@ interface Feedback {
 
 interface FeedbackSectionProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   feedback: Feedback | null;
 }
 
-const FeedbackSection: React.FC<FeedbackSectionProps> = ({ isOpen, onClose, feedback = null }) => {
+const FeedbackSection: React.FC<FeedbackSectionProps> = ({ isOpen, onClose: _onClose, feedback = null }) => {
   const isAssessment = feedback && feedback.type === 'assessment';
 
   // Parse assessment content
@@ -54,7 +54,7 @@ const FeedbackSection: React.FC<FeedbackSectionProps> = ({ isOpen, onClose, feed
     const needsTips = metrics.filter(m => m.score < 80);
 
     return (
-      <div className="space-y-2 h-[250px] max-h-[250px] overflow-y-scroll">
+      <div className="space-y-2">
         <h4 className="text-sm font-medium text-gray-700">Your Speech Assessment</h4>
 
         <div className="border rounded p-3 mb-2 bg-gray-50">
@@ -102,13 +102,13 @@ const FeedbackSection: React.FC<FeedbackSectionProps> = ({ isOpen, onClose, feed
 
   return (
     // <div className={`${isOpen ? 'block' : 'hidden'} bg-white rounded-lg shadow-lg p-4 h-full`}>
-    <div className={`${isOpen ? 'block' : 'hidden'} bg-white rounded-lg shadow-lg p-4 h-full`}>
+    <div className={`${isOpen ? 'block' : 'hidden'} bg-white rounded-lg shadow-lg p-4 max-h-[320px] overflow-y-auto border`}>
       <div>
-        <div className="flex justify-end mb-4">
+        {/* <div className="flex justify-end mb-4">
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X size={20} />
           </button>
-        </div>
+        </div> */}
 
         <div>
           <div className="bg-white rounded-lg">
@@ -118,7 +118,7 @@ const FeedbackSection: React.FC<FeedbackSectionProps> = ({ isOpen, onClose, feed
                   {isAssessment ? (
                     <BarChart
                       size={24}
-                      className="bg-gradient-to-r from-violet-500 to-blue-400 bg-clip-text text-transparent"
+                      className="bg-gradient-to-r from-violet-500 to-blue-400 bg-clip-text"
                     />
                   ) : (
                     <span>💬</span>
@@ -133,7 +133,9 @@ const FeedbackSection: React.FC<FeedbackSectionProps> = ({ isOpen, onClose, feed
               {feedback ? (
                 isAssessment
                   ? renderAssessment(parsedAssessment as Assessment)
-                  : <p className="text-gray-700">{feedback.content as string}</p>
+                  : <p className="bg-gradient-to-r from-violet-500 to-blue-400 bg-clip-text text-transparent">
+                      {feedback.content as string}
+                    </p>                
               ) : (
                 <p className="text-gray-500">
                   Click the "View Feedback" or "View Assessment" button on any message to see details here.
