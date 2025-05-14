@@ -65,7 +65,7 @@ export default function StudentDashboard() {
       {/* Welcome Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[var(--font-dark)]">
-          Welcome back, {user?.name?.split(' ')[0] || 'Student'}
+          Welcome back, {user?.username?.split(' ')[0] || 'Student'}
         </h1>
         <p className="text-[var(--font-light2)]">
           Here's an overview of your learning progress and upcoming tasks.

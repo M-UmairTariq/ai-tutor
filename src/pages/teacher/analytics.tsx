@@ -28,7 +28,6 @@ import {
   Users,
   Activity,
   BarChart2,
-  PieChart as PieChartIcon,
   TrendingUp,
 } from 'lucide-react';
 import {
@@ -42,7 +41,7 @@ import {
 export default function TeacherAnalytics() {
   const { courses } = useAppSelector((state) => state.courses);
   const [dateRange, setDateRange] = useState('30days');
-  const [courseFilter, setCourseFilter] = useState('all');
+  const [_courseFilter, setCourseFilter] = useState('all');
 
   // Mock enrollment data
   const enrollmentData = [
@@ -263,7 +262,7 @@ export default function TeacherAnalytics() {
                         fill="#8884d8"
                         dataKey="value"
                       >
-                        {progressData.map((entry, index) => (
+                        {progressData.map((_entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>

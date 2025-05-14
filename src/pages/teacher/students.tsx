@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/table';
 import {
   Search,
-  ChevronDown,
   Filter,
   Download,
   Mail,
@@ -24,6 +23,7 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  TrendingUp,
 } from 'lucide-react';
 import {
   DropdownMenu,

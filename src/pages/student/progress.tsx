@@ -211,7 +211,7 @@ export default function StudentProgress() {
                         nameKey="name"
                         label
                       >
-                        {completionStatusData.map((entry, index) => (
+                        {completionStatusData.map((_entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>

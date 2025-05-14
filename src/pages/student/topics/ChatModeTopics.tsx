@@ -1,21 +1,19 @@
 import { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchTopics } from '@/redux/slices/topicsSlice';
-import { logout } from '@/redux/slices/authSlice';
+// import { logout } from '@/redux/slices/authSlice';
 import {
   Card,
   CardContent,
   CardFooter,
-  CardHeader,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const ChatModeTopics = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   const { topics, isLoading, error } = useAppSelector((state) => state.topics);
@@ -33,11 +31,11 @@ const ChatModeTopics = () => {
     }
   }, [error]);
 
-  const handleLogout = async () => {
-    await dispatch(logout());
-    toast.success('Logged out successfully');
-    navigate('/login');
-  };
+  // const handleLogout = async () => {
+  //   await dispatch(logout());
+  //   toast.success('Logged out successfully');
+  //   navigate('/login');
+  // };
 
   return (
     <div className="container mx-auto px-4 py-6">

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchTopics } from '@/redux/slices/topicsSlice';
@@ -7,14 +7,11 @@ import {
   Card,
   CardContent,
   CardFooter,
-  CardHeader,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const PhotoModeTopics = () => {
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   const { topics, isLoading, error } = useAppSelector((state) => state.topics);

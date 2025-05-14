@@ -45,7 +45,7 @@ export default function TeacherDashboard() {
       {/* Welcome Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[var(--font-dark)]">
-          Welcome back, {user?.name?.split(' ')[0] || 'Teacher'}
+          Welcome back, {user?.username?.split(' ')[0] || 'Teacher'}
         </h1>
         <p className="text-[var(--font-light2)]">
           Here's an overview of your courses and teaching metrics.

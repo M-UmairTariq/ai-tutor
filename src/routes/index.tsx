@@ -20,7 +20,6 @@ import LoginPage from '@/pages/auth/login';
 import ChatModeTopics from '@/pages/student/topics/ChatModeTopics';
 import PhotoModeTopics from '@/pages/student/topics/PhotoModeTopics';
 import Leaderboard from '@/pages/student/Leaderboard';
-import ChatWindowComponent from '@/pages/student/ChatWindow';
 import Chat from '@/pages/student/ChatPage';
 
 const AppRoutes = () => {

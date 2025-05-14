@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppSelector } from '@/redux/hooks';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,7 +26,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useDispatch } from 'react-redux';
 import { logout } from '@/redux/slices/authSlice';
 
 interface TeacherLayoutProps {
@@ -37,7 +36,7 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
@@ -265,9 +264,9 @@ export function TeacherLayout({ children }: TeacherLayoutProps) {
                   className="rounded-full h-8 w-8 p-0 ml-2"
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="" alt={user?.name || 'User'} />
+                    <AvatarImage src="" alt={user?.username || 'User'} />
                     <AvatarFallback>
-                      {user?.name?.charAt(0) || 'U'}
+                      {user?.username?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </Button>

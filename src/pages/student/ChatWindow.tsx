@@ -28,6 +28,25 @@ import {
 import FeedbackSectionModal from "./FeedbackSectionModel";
 import { Progress } from "@/components/ui/progress";
 
+function findLastIndex<T>(array: T[], predicate: (value: T, index: number, obj: T[]) => boolean): number {
+  for (let i = array.length - 1; i >= 0; i--) {
+    if (predicate(array[i], i, array)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function findLast<T>(array: T[], predicate: (value: T, index: number, obj: T[]) => boolean): T | undefined {
+  for (let i = array.length - 1; i >= 0; i--) {
+    if (predicate(array[i], i, array)) {
+      return array[i];
+    }
+  }
+  return undefined;
+}
+
+
 interface Message {
   id: string;
   messageType: string;
@@ -238,9 +257,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
 
   // Auto-play new audio when added
   useEffect(() => {
-    const latestAudioMsg = messages.findLast(
-      (msg:any) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
-    );
+    // const latestAudioMsg = messages.findLast(
+    //   (msg:any) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
+    // );
+
+    const latestAudioMsg = findLast(messages, (msg:any) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed);
+
 
     if (latestAudioMsg && audioRefs.current[latestAudioMsg.id]) {
       const audioElement = audioRefs.current[latestAudioMsg.id];
@@ -356,11 +378,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
     }
   };
 
+  // function findLastIndex<T>(array: T[], predicate: (value: T, index: number, obj: T[]) => boolean): number {
+  //   for (let i = array.length - 1; i >= 0; i--) {
+  //     if (predicate(array[i], i, array)) {
+  //       return i;
+  //     }
+  //   }
+  //   return -1;
+  // }
+
   const updateOrAddMessage = (messageData: Partial<Message>) => {
     setMessages((currentMessages) => {
-      const lastAiMessageIndex = currentMessages.findLastIndex(
-        (m:any) => m.type === "received" && (m.loading || m.text?.endsWith("..."))
-      );
+      // const lastAiMessageIndex = currentMessages.findLastIndex(
+      //   (m:any) => m.type === "received" && (m.loading || m.text?.endsWith("..."))
+      // );
+      const lastAiMessageIndex = findLastIndex(currentMessages, (m:any) => m.type === "received" && (m.loading || m.text?.endsWith("...")));
       if (lastAiMessageIndex !== -1) {
         const newMessages = [...currentMessages];
         newMessages[lastAiMessageIndex] = {
@@ -378,7 +410,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
 
   const updateOrAddAudioUrl = (audioUrl: string) => {
     setMessages((currentMessages) => {
-      const lastAiMessageIndex = currentMessages.findLastIndex((m:any) => m.type === "received");
+      const lastAiMessageIndex = findLastIndex(currentMessages, (m:any) => m.type === "received");
       if (lastAiMessageIndex !== -1) {
         const newMessages = [...currentMessages];
         newMessages[lastAiMessageIndex] = {
