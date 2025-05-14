@@ -97,7 +97,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
 
-  const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+  const userData = JSON.parse(localStorage.getItem("AiTutorUser") || "{}");
   const userId = userData?.id;
   const WS_URL = import.meta.env.VITE_API_BASE_URL.replace(/^http/, "ws");
   const navigate = useNavigate();
@@ -300,6 +300,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
           isCompleted: message.isCompleted || false,
         }));
       setMessages(formattedMessages);
+      console.log(msg.chatId, "CHATID FROM MSG")
       if (msg.chatId) setChatId(msg.chatId);
       const isCompleted = msg.chatHistory.some((m: any) => m.isCompleted);
       setChatCompleted(isCompleted);

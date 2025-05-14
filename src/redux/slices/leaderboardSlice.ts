@@ -103,7 +103,8 @@ export interface LeaderboardUser {
   lastName: string;
   schoolName: string;
   class: string;
-  cefrLevel: string;
+  // cefrLevel: string;
+  aiCefrLevel	: string;
   totalSeconds: number;
 }
 

@@ -708,7 +708,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
                 <th className="py-3 px-2">Student</th>
                 <th className="py-3 px-2">School</th>
                 <th className="py-3 px-2">Section</th>
-                <th className="py-3 px-2">Level</th>
+                {/* <th className="py-3 px-2">Level</th> */}
                 <th className="py-3 px-2">Time</th>
               </tr>
             </thead>
@@ -743,8 +743,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
                   <td className="py-4 px-2">{user.class}</td>
                   <td className="py-4 px-2">
                     <div className="flex items-center">
-                      <span className={`flex items-center justify-center px-2 py-1 rounded-full text-xs ${getLevelBadgeColor(user.cefrLevel)}`}>
-                        {user.cefrLevel}
+                      <span className={`flex items-center justify-center px-2 py-1 rounded-full text-xs ${getLevelBadgeColor(user.aiCefrLevel	)}`}>
+                        {user.aiCefrLevel	}
                       </span>
                     </div>
                   </td>
