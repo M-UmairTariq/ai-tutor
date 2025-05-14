@@ -556,6 +556,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
           sendPlaceholder();
           const base64 = await blobToBase64(blob);
           if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            console.log("USERID: ", userId, "topicid ", topicId, "chatid: ", chatId, mimeType.split("/")[1], "LOGGED DATA"),
             wsRef.current.send(JSON.stringify({ userId, topicId, chatId, format: mimeType.split("/")[1], type: "audio", payload: { audioBuffer: base64, format: mimeType } }));
             resetActivityTimer();
           } else {
