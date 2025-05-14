@@ -735,7 +735,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
                             <span className="ml-1 text-xs text-blue-600">(You)</span>
                           )}
                         </div>
-                        <div className="text-xs text-blue-600">View Profile →</div>
+                        {/* <div className="text-xs text-blue-600">View Profile →</div> */}
                       </div>
                     </div>
                   </td>
