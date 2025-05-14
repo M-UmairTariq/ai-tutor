@@ -1,9 +1,33 @@
 export interface ChatMessage {
-    id: string; // Unique message ID
-    chatSessionId: string; // ID of the chat session this message belongs to
-    text: string; // Content of the message
-    sender: 'user' | 'bot' | string; // Differentiates between user, bot, or other senders
-    timestamp: string; // ISO 8601 date string for when the message was sent/received
-    // Optional: Add other properties like avatarUrl, messageStatus (sent, delivered, read), etc.
-  }
-  
+  id: string;
+  messageType: "text" | "audio" | "loading";
+  text?: string;
+  audioUrl?: string;
+  audioPlayed?: boolean;
+  type: "sent" | "received";
+  feedback?: any;
+  assessments?: any;
+  hasFeedback?: boolean;
+  hasAssessment?: boolean;
+  isCompleted?: boolean;
+  loading?: boolean;
+}
+
+export interface ChatState {
+  messages: ChatMessage[];
+  isRecording: boolean;
+  recordTime: number;
+  chatId: string | null;
+  sessionTimeRemaining: number | null;
+  sessionLimitReached: boolean;
+  errorMessage: string;
+  showError: boolean;
+  chatCompleted: boolean;
+  topicImage: string | null;
+  isFeedbackDialogOpen: boolean;
+  feedback: any | null;
+  processedResponses: Set<string>;
+  playingAudio: string | null;
+  isInactiveDialogOpen: boolean;
+  isWebSocketConnected: boolean;
+}

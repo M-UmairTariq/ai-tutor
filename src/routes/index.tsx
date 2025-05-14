@@ -21,6 +21,7 @@ import ChatModeTopics from '@/pages/student/topics/ChatModeTopics';
 import PhotoModeTopics from '@/pages/student/topics/PhotoModeTopics';
 import Leaderboard from '@/pages/student/Leaderboard';
 import ChatWindowComponent from '@/pages/student/ChatWindow';
+import Chat from '@/pages/student/ChatPage';
 
 const AppRoutes = () => {
   // const { user } = useAppSelector((state) => state.auth);
@@ -135,12 +136,11 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/student/learning-mode/:topic"
+        path="/student/learning-mode/:topicId"
         element={
           <StudentRoute>
             <StudentLayout>
-              afadsfs
-              <ChatWindowComponent />
+              <Chat />
             </StudentLayout>
           </StudentRoute>
         }

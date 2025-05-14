@@ -189,11 +189,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
 
   return (
     <div className="mx-auto">
-      <h1 className="text-2xl font-bold mb-8">Leader Board</h1>
+      {/* <h1 className="text-2xl font-bold mb-8">Leader Board</h1> */}
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Filter Section */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
+        {/* <div className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="text-xl font-bold mb-6">Filter</h2>
           
           <div className="space-y-4">
@@ -225,7 +225,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
               </Select>
             </div>
             
-            {/* <div className="w-full">
+            <div className="w-full">
               <Select value={ranking} onValueChange={setRanking}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Ranking" />
@@ -236,9 +236,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
                   <SelectItem value="top20">Top 20</SelectItem>
                 </SelectContent>
               </Select>
-            </div> */}
+            </div>
             
-            {/* <div className="w-full">
+            <div className="w-full">
               <Select value={section} onValueChange={setSection}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Section" />
@@ -250,7 +250,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
                   ))}
                 </SelectContent>
               </Select>
-            </div> */}
+            </div>
             
             <Button 
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
@@ -259,16 +259,16 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
               Apply Filter
             </Button>
           </div>
-        </div>
+        </div> */}
         
         {/* Main Content */}
-        <div className="md:col-span-3 bg-white p-6 rounded-lg shadow-sm">
+        <div className="md:col-span-4 bg-white p-6 rounded-lg shadow-sm">
           {/* Top 3 Users */}
           <div className="flex flex-wrap justify-center mb-10 gap-6">
             {getOrderedTopUsers().map((user: any, index: number) => (
               <div 
                 key={user.username} 
-                className={`flex flex-col items-center ${index === 1 ? 'mt-0' : 'mt-8'}`}
+                className={`flex flex-col items-center ${index === 1 ? 'mt-0' : index == 2 ? 'mt-8' : "mt-4"}`}
               >
                 <div className="relative">
                   {user.rank === 1 && (
@@ -277,6 +277,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
                     </div>
                   )}
                   <div className={`relative w-24 h-24 rounded-full border-4 overflow-hidden ${getCircleColor(user.rank)}`}>
+                  {/* <div className={`relative ${index === 1 ? "w-36 h-36": index == 2 ? "w-28 h-28" : "w-32 h-32"} rounded-full border-4 overflow-hidden ${getCircleColor(user.rank)}`}> */}
                     {/* Using placeholder avatar - replace with actual user avatars if available */}
                     <img 
                       src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} 
