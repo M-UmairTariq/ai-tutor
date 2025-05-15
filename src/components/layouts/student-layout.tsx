@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+// import { useAppSelector } from '@/redux/hooks';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,12 +13,13 @@ import {
   X,
   Brain,
   ChevronLeft,
-  // Bell,
-  // Settings,
-  // ChevronDown,
-  // Languages,
+  Bell,
+  Settings,
+  ChevronDown,
+  Languages,
   LogOut,
 } from 'lucide-react';
+// import { ThemeToggle } from '@/components/theme-toggle';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { logout } from '@/redux/slices/authSlice';
@@ -30,7 +32,7 @@ import { toast } from 'sonner';
 //   DropdownMenuSeparator,
 //   DropdownMenuTrigger,
 // } from '@/components/ui/dropdown-menu';
-// import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 // import { useDispatch } from 'react-redux';
 // import { logout } from '@/redux/slices/authSlice';
 
@@ -181,13 +183,13 @@ export function StudentLayout({ children }: StudentLayoutProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Notification */}
-            {/* <Button size="sm" variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 w-10 p-0 flex items-center justify-center">
+            <Button size="sm" variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 w-10 p-0 flex items-center justify-center">
               <Bell className="w-5 h-5" />
-            </Button> */}
+            </Button>
 
             {/* User Info */}
-            {/* <div className="flex items-center gap-2 bg-[#F8F9FD] px-3 py-1 rounded-full h-10">
+            <div className="flex items-center gap-2 bg-[#F8F9FD] px-3 py-1 rounded-full h-10">
+              
               <img
                 src="https://i.pravatar.cc/30"
                 alt="user"
@@ -200,13 +202,13 @@ export function StudentLayout({ children }: StudentLayoutProps) {
               <Button size="icon" variant="ghost" className="rounded-full p-0 h-6 w-6 ml-1">
                 <Settings className="w-4 h-4" />
               </Button>
-            </div> */}
+            </div>
 
             {/* Language */}
-            {/* <Button variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 flex items-center px-3 py-0">
+            <Button variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 flex items-center px-3 py-0">
               <Languages className="w-5 h-5" />
               <ChevronDown className="w-4 h-4 ml-1" />
-            </Button> */}
+            </Button>
 
             {/* Logout */}
             <Button onClick={handleLogout} size="sm" variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 w-10 p-0 flex items-center justify-center">

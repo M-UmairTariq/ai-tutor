@@ -31,11 +31,6 @@ const ChatModeTopics = () => {
     }
   }, [error]);
 
-  // const handleLogout = async () => {
-  //   await dispatch(logout());
-  //   toast.success('Logged out successfully');
-  //   navigate('/login');
-  // };
 
   return (
     <div className="container mx-auto px-4 py-6">
