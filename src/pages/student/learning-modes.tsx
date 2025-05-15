@@ -7,7 +7,7 @@ import photoModeAvatar from "@/assets/svgs/photoModeAvatar.svg";
 const modes = [
   {
     title: "Chat Mode",
-    description: "Enhance your language skills by chatting with our AI teacher.",
+    description: "Enhance your language skills by chatting with our AI.",
     image: chatModeAvatar,
     route: "/student/learning-modes/chat-mode",
   },
@@ -37,7 +37,7 @@ const LearningModes: React.FC = () => {
           >
             {/* Top row for mobile/tablet/small screens */}
             <div className="flex w-full items-center justify-between mb-4 lg:hidden">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4 flex-1">
                 <img
                   src={mode.image}
                   alt={`${mode.title} avatar`}

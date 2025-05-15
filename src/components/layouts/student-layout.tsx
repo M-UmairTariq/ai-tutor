@@ -13,10 +13,10 @@ import {
   X,
   Brain,
   ChevronLeft,
-  Bell,
-  Settings,
-  ChevronDown,
-  Languages,
+  // Bell,
+  // Settings,
+  // ChevronDown,
+  // Languages,
   LogOut,
 } from 'lucide-react';
 // import { ThemeToggle } from '@/components/theme-toggle';
@@ -60,13 +60,13 @@ export function StudentLayout({ children }: StudentLayoutProps) {
   const decodeAndFormatTitle = (text: string) => {
     return decodeURIComponent(text) // Decode %20 etc.
       .replace(/[-_]+/g, " ") // Replace dashes and underscores with space
-      .split(" ") // Split by space
+      .split(" ")
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
       .join(" ");
   };
-  
-  const formattedTitle = decodeAndFormatTitle(lastSegment);
-  
+
+  const formattedTitle = decodeAndFormatTitle(lastSegment).split(":")[0];
+
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -170,6 +170,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
       <div className="lg:pl-64 flex flex-col flex-1">
         {/* Top header */}
         <header className="sticky top-0 z-10 flex lg:hidden items-center justify-between h-16 px-4 bg-background lg:px-8">
+
           <Button
             variant="ghost"
             size="icon"
@@ -178,6 +179,13 @@ export function StudentLayout({ children }: StudentLayoutProps) {
           >
             <Menu className="h-6 w-6" />
           </Button>
+          <h1 className="text-md font-medium tracking-tight">{formattedTitle}</h1>
+
+
+          <Button onClick={handleLogout} size="sm" variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 w-10 p-0 flex items-center justify-center">
+            <LogOut className="w-5 h-5" />
+          </Button>
+
         </header>
         <header className="sticky top-0 z-10 hidden lg:flex items-center justify-between h-16 bg-background py-10 px-8 ">
           <div className="flex items-center">
@@ -189,16 +197,16 @@ export function StudentLayout({ children }: StudentLayoutProps) {
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-2xl font-bold">{ formattedTitle }</h1>
+            <h1 className="text-2xl font-bold">{formattedTitle}</h1>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button size="sm" variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 w-10 p-0 flex items-center justify-center">
+            {/* <Button size="sm" variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 w-10 p-0 flex items-center justify-center">
               <Bell className="w-5 h-5" />
-            </Button>
+            </Button> */}
 
             {/* User Info */}
-            <div className="flex items-center gap-2 bg-[#F8F9FD] px-3 py-1 rounded-full h-10">
+            {/* <div className="flex items-center gap-2 bg-[#F8F9FD] px-3 py-1 rounded-full h-10">
               
               <img
                 src="https://i.pravatar.cc/30"
@@ -212,13 +220,13 @@ export function StudentLayout({ children }: StudentLayoutProps) {
               <Button size="icon" variant="ghost" className="rounded-full p-0 h-6 w-6 ml-1">
                 <Settings className="w-4 h-4" />
               </Button>
-            </div>
+            </div> */}
 
             {/* Language */}
-            <Button variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 flex items-center px-3 py-0">
+            {/* <Button variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 flex items-center px-3 py-0">
               <Languages className="w-5 h-5" />
               <ChevronDown className="w-4 h-4 ml-1" />
-            </Button>
+            </Button> */}
 
             {/* Logout */}
             <Button onClick={handleLogout} size="sm" variant="ghost" className="rounded-full bg-[#F8F9FD] h-10 w-10 p-0 flex items-center justify-center">

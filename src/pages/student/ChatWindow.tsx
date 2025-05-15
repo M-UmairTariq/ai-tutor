@@ -80,6 +80,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
   const [_isFeedbackDialog, setIsFeedbackDialog] = useState(false);
   const [_feedback, setFeedback] = useState<any>(null);
   const [isInactiveDialogOpen, setIsInactiveDialogOpen] = useState(false);
+  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
 
   const lastRecordingEndTimeRef = useRef<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -126,7 +127,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
       intentionalDisconnectRef.current = true;
       wsRef.current?.close();
       setIsInactiveDialogOpen(true);
-    }, 60 * 1000 * 1);
+    }, 60 * 1000 * 2);
   };
 
   const connectWebSocket = () => {
@@ -170,7 +171,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
 
     ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data);
-      console.log("WS message received: TYPE::", msg.type,  msg);
+      console.log("WS message received: TYPE::", msg.type, msg);
 
       switch (msg.type) {
         case "chat_history":
@@ -223,7 +224,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
       }
 
       console.log("Attempting WebSocket connection (attempt" + " " + attempts + 1);
-      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {}
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) { }
 
       connectWebSocket();
     };
@@ -305,6 +306,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
       if (msg.chatId) setChatId(msg.chatId);
       const isCompleted = msg.chatHistory.some((m: any) => m.isCompleted);
       setChatCompleted(isCompleted);
+      if (isCompleted) {
+        setIsCompleteDialogOpen(true);
+        toast.error("This chat has been completed.");
+      }
     }
   };
 
@@ -352,6 +357,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
     }
     if (msg.message.includes("This chat has been completed")) {
       setChatCompleted(true);
+      setIsCompleteDialogOpen(true);
       toast.error("This chat has been completed.");
     }
     removeLoadingMessage();
@@ -559,7 +565,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
           const base64 = await blobToBase64(blob);
           if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             console.log("USERID: ", userId, "topicid ", topicId, "chatid: ", chatId, mimeType.split("/")[1], "LOGGED DATA"),
-            wsRef.current.send(JSON.stringify({ userId, topicId, chatId, format: mimeType.split("/")[1], type: "audio", payload: { audioBuffer: base64, format: mimeType } }));
+              wsRef.current.send(JSON.stringify({ userId, topicId, chatId, format: mimeType.split("/")[1], type: "audio", payload: { audioBuffer: base64, format: mimeType } }));
             resetActivityTimer();
           } else {
             console.error("WebSocket not open for sending audio");
@@ -623,8 +629,44 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
     navigate(-1);
   };
 
+  const handleResetChatNo = () => {
+    setIsCompleteDialogOpen(false)
+  }
+
+  const resetChat = () => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      // 1) send the “reset chat” command to the server
+      ws.send(
+        JSON.stringify({
+          action: 'resetChat',     
+          payload: {},             
+        })
+      );
+      // 2) reset your inactivity timer if you like
+      resetActivityTimer();
+    } else {
+      // if the socket isn’t open, open it and send when ready
+      connectWebSocket();
+      // queue the reset once it opens:
+      const onOpen = () => {
+        wsRef.current?.send(
+          JSON.stringify({ action: 'resetChat', payload: {} })
+        );
+        wsRef.current?.removeEventListener('open', onOpen);
+        resetActivityTimer();
+      };
+      wsRef.current?.addEventListener('open', onOpen);
+    }
+  };
+
+  const handleResetChatYes = () => {
+    resetChat();
+    setIsCompleteDialogOpen(false);
+  }
+
   return (
-    <div className="flex flex-col max-h-[86vh] md:min-h-[82vh] md:max-h-[82vh] max-w-[800px] mx-auto bg-card rounded-xl overflow-hidden bg-gray-100 p-2">
+    <div className="flex flex-col max-h-[86vh] min-h-[86vh] md:min-h-[82vh] md:max-h-[82vh] max-w-[800px] mx-auto bg-card rounded-xl overflow-hidden bg-gray-100 p-2">
       <header className="flex justify-between items-center px-6 border-b-3 border-white">
         <Button variant="ghost" size="icon" onClick={handleBackClick}>
           <ChevronLeft className="h-4 w-4" />
@@ -674,7 +716,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleAudio(msg.id, msg.audioUrl as string)}
-                        className={`${msg.type === "received" ? "": "bg-white"} flex items-center gap-1 ${playingAudio === msg.id ? "text-[#6250E9]" : "text-[#757575]"}`}
+                        className={`${msg.type === "received" ? "" : "bg-white"} flex items-center gap-1 ${playingAudio === msg.id ? "text-[#6250E9]" : "text-[#757575]"}`}
                       >
                         {playingAudio === msg.id ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                         <span className="text-xs">Tap to play</span>
@@ -728,10 +770,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
             onChange={(e) => setMessage(e.target.value)}
             placeholder={
               isInactiveDialogOpen ? "Session paused..." :
-              sessionLimitReached ? "Session limit reached" :
-              chatCompleted ? "Chat completed" :
-              isRecording ? "Recording..." :
-              "Write message..."
+                sessionLimitReached ? "Session limit reached" :
+                  chatCompleted ? "Chat completed" :
+                    isRecording ? "Recording..." :
+                      "Write message..."
             }
             className="flex-1 border-none focus:ring-0"
           />
@@ -785,6 +827,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
           feedback={feedback}
         />
       )} */}
+
+
+      <Dialog open={isCompleteDialogOpen} onOpenChange={(open) => !open && handleResetChatNo()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Do you want to reset and start over?</DialogTitle>
+            <DialogDescription>
+              Your session was paused due to inactivity. Do you want to continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleResetChatNo}>
+              No, End Session
+            </Button>
+            <Button onClick={handleResetChatYes}>
+              Reset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={isInactiveDialogOpen} onOpenChange={(open) => !open && handleStillThereNo()}>
         <DialogContent>

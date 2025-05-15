@@ -89,7 +89,7 @@ const PhotoModeTopics = () => {
                 </CardContent>
 
                 <CardFooter className="flex justify-end p-4 pt-0">
-                  <Link to={`/student/learning-mode/${topic?.id}?mode=photo-mode`} >
+                  <Link to={`/student/learning-mode/${topic?.id}/${topic?.topicName}?mode=photo-mode`} >
 
                     <Button
                       size="sm"
