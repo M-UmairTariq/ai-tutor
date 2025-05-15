@@ -35,6 +35,7 @@
   --input: 0 0% 89.8%;
   --ring: 217 93% 48%;
   --radius: 0.5rem;
+  
 }
 
 .dark {
@@ -80,3 +81,8 @@ body {
   margin: 0 auto;
   padding: 0 1rem;
 } */
+
+
+.gradientBg {
+  background: linear-gradient(90deg, rgba(98, 80, 233, 0.1) 0%, rgba(105, 189, 255, 0.1) 100%);
+}

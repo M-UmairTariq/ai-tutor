@@ -95,6 +95,16 @@ const AppRoutes = () => {
       />
       
       <Route
+        path="/student/dashboard"
+        element={
+          <StudentRoute>
+            <StudentLayout>
+              <StudentDashboard />
+            </StudentLayout>
+          </StudentRoute>
+        }
+      />
+      <Route
         path="/student/learning-modes"
         element={
           <StudentRoute>
