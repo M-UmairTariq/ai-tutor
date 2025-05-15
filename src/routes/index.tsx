@@ -95,11 +95,11 @@ const AppRoutes = () => {
       />
       
       <Route
-        path="/student/dashboard"
+        path="/student/learning-modes"
         element={
           <StudentRoute>
             <StudentLayout>
-              <StudentDashboard />
+              <LearningModes />
             </StudentLayout>
           </StudentRoute>
         }
