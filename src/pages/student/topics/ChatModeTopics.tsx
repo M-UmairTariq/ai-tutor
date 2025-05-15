@@ -92,7 +92,7 @@ const ChatModeTopics = () => {
                 </CardContent>
 
                 <CardFooter className="flex justify-end p-4 pt-0">
-                  <Link to={`/student/learning-mode/${topic?.id}?mode=chat-mode`} >
+                  <Link to={`/student/learning-mode/${topic?.id}/${topic.topicName}?mode=chat-mode`} >
 
                     <Button
                       size="sm"

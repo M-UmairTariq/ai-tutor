@@ -399,7 +399,10 @@ interface LeaderboardProps {
   userId?: string;
 }
 
-const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-8d38-12f388104d09" }) => {
+const Leaderboard: React.FC<LeaderboardProps> = ({ userId }) => {
+  const user = localStorage.getItem("AiTutorUser");
+  let parsedUser = JSON.parse(user || '{}');
+  userId = parsedUser?.id
   const dispatch = useAppDispatch();
   const { leaderboard, currentUser, isLoading, error } = useAppSelector(state => state.leaderboard);
   console.log(leaderboard, currentUser, isLoading, error, "ALL")
@@ -460,7 +463,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
   // Fetch leaderboard data with filters
   const fetchLeaderboardData = () => {
     const filters: LeaderboardFilters = {
-      userId: userId
+      userId: userId || ""
     };
 
     // Commented out school filter
@@ -708,7 +711,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId = "84cae2a4-63bf-4dfb-
                 <th className="py-3 px-2">Student</th>
                 <th className="py-3 px-2">School</th>
                 <th className="py-3 px-2">Section</th>
-                {/* <th className="py-3 px-2">Level</th> */}
+                <th className="py-3 px-2">Level</th>
                 <th className="py-3 px-2">Time</th>
               </tr>
             </thead>

@@ -52,11 +52,21 @@ export function StudentLayout({ children }: StudentLayoutProps) {
   const lastSegment = pathSegments[pathSegments.length - 1] || "";
 
   // Capitalize each word
-  const formattedTitle = lastSegment
-    .split("-")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  // const formattedTitle = lastSegment
+  //   .split("-")
+  //   .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+  //   .join(" ");
 
+  const decodeAndFormatTitle = (text: string) => {
+    return decodeURIComponent(text) // Decode %20 etc.
+      .replace(/[-_]+/g, " ") // Replace dashes and underscores with space
+      .split(" ") // Split by space
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
+      .join(" ");
+  };
+  
+  const formattedTitle = decodeAndFormatTitle(lastSegment);
+  
 
   useEffect(() => {
     if (!isAuthenticated) {

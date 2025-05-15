@@ -145,7 +145,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/student/learning-mode/:topicId"
+        path="/student/learning-mode/:topicId/:topicName"
         element={
           <StudentRoute>
             <StudentLayout>
