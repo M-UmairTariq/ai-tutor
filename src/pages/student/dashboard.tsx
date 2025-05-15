@@ -17,7 +17,7 @@ import {
   // Book,
   // CheckCircle,
   // User,
-  ArrowRight
+  // ArrowRight
 } from 'lucide-react';
 
 import { Calendar } from "@/components/ui/calendar"

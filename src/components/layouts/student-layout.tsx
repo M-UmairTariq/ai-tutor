@@ -32,7 +32,7 @@ import { toast } from 'sonner';
 //   DropdownMenuSeparator,
 //   DropdownMenuTrigger,
 // } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+// import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 // import { useDispatch } from 'react-redux';
 // import { logout } from '@/redux/slices/authSlice';
 
