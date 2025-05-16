@@ -80,7 +80,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
   const [_isFeedbackDialog, setIsFeedbackDialog] = useState(false);
   const [_feedback, setFeedback] = useState<any>(null);
   const [isInactiveDialogOpen, setIsInactiveDialogOpen] = useState(false);
-  // const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
+  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
 
   const lastRecordingEndTimeRef = useRef<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -357,7 +357,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
     }
     if (msg.message.includes("This chat has been completed")) {
       setChatCompleted(true);
-      // setIsCompleteDialogOpen(true);
+      setIsCompleteDialogOpen(true);
       toast.error("This chat has been completed.");
     }
     removeLoadingMessage();
@@ -629,37 +629,36 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
     navigate(-1);
   };
 
-  // const handleResetChatNo = () => {
-  //   setIsCompleteDialogOpen(false)
-  // }
+  const handleResetChatNo = () => {
+    setIsCompleteDialogOpen(false)
+  }
 
-  // const resetChat = () => {
-  //   const ws = wsRef.current;
-  //   if (ws && ws.readyState === WebSocket.OPEN) {
-  //     ws.send(
-  //       JSON.stringify({
-  //         action: 'resetChat',     
-  //         payload: {},             
-  //       })
-  //     );
-  //     resetActivityTimer();
-  //   } else {
-  //     connectWebSocket();
-  //     const onOpen = () => {
-  //       wsRef.current?.send(
-  //         JSON.stringify({ action: 'resetChat', payload: {} })
-  //       );
-  //       wsRef.current?.removeEventListener('open', onOpen);
-  //       resetActivityTimer();
-  //     };
-  //     wsRef.current?.addEventListener('open', onOpen);
-  //   }
-  // };
+  const resetChat = () => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          type: 'reset_chat', chatId, topicId, userId,            
+        })
+      );
+      resetActivityTimer();
+    } else {
+      connectWebSocket();
+      const onOpen = () => {
+        wsRef.current?.send(
+          JSON.stringify({ type: 'reset_chat', userId, topicId, chatId })
+        );
+        wsRef.current?.removeEventListener('open', onOpen);
+        resetActivityTimer();
+      };
+      wsRef.current?.addEventListener('open', onOpen);
+    }
+  };
 
-  // const handleResetChatYes = () => {
-  //   resetChat();
-  //   setIsCompleteDialogOpen(false);
-  // }
+  const handleResetChatYes = () => {
+    resetChat();
+    setIsCompleteDialogOpen(false);
+  }
 
   return (
     <div className="flex flex-col max-h-[86vh] min-h-[86vh] md:min-h-[82vh] md:max-h-[82vh] max-w-[800px] mx-auto bg-card rounded-xl overflow-hidden bg-gray-100 p-2">
@@ -825,7 +824,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
       )} */}
 
 
-      {/* <Dialog open={isCompleteDialogOpen} onOpenChange={(open) => !open && handleResetChatNo()}>
+       <Dialog open={isCompleteDialogOpen} onOpenChange={(open) => !open && handleResetChatNo()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Do you want to reset and start over?</DialogTitle>
@@ -842,7 +841,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog> */}
+      </Dialog> 
 
 
       <Dialog open={isInactiveDialogOpen} onOpenChange={(open) => !open && handleStillThereNo()}>
