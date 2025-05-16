@@ -20,13 +20,33 @@ import {
   // ArrowRight
 } from 'lucide-react';
 
+import clock_image from "@/assets/images/clock_image.png"
+
 import { Calendar } from "@/components/ui/calendar"
+import Badge_04 from "@/assets/images/Badge_04.png"
+import DashboardProfile from '@/components/ui/DashboardProfile';
+import chatModeAvatar from "@/assets/svgs/chatModeAvatar.svg";
+import photoModeAvatar from "@/assets/svgs/photoModeAvatar.svg";
 
 
 export default function LanguageLearningDashboard() {
   const [activeTab, setActiveTab] = useState('all');
   const [date, setDate] = useState<Date | undefined>(new Date())
 
+  const modes = [
+    {
+      title: "Chat Mode",
+      description: "Enhance your language skills by chatting with our AI.",
+      image: chatModeAvatar,
+      route: "/student/learning-modes/chat-mode",
+    },
+    {
+      title: "Photo Mode",
+      description: "Let's break down images and get instant feedback from AI.",
+      image: photoModeAvatar,
+      route: "/student/learning-modes/photo-mode",
+    },
+  ];
 
   const user = {
     name: "Huynam Moinon",
@@ -98,7 +118,7 @@ export default function LanguageLearningDashboard() {
   return (
     <div className="flex flex-col min-h-screen border border-[var(--border-light)] rounded-3xl">
       {/* Main Content */}
-      <div className="flex-1 container mx-auto px-4 py-6">
+      <div className="flex-1 container mx-auto px-4 py-4">
 
 
 
@@ -134,9 +154,9 @@ export default function LanguageLearningDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           {/* Left Column - Tasks */}
           <div className="md:col-span-2 bg-gray-50 rounded-3xl ">
-            <div className='md:mb-4'>
-              <h1 className="text-3xl font-bold text-black">Hi <span className='text-blue-600'> {user.name}! </span></h1>
-              <p className="text-gray-600">
+            <div className='mb-4'>
+              <h1 className="text-3xl font-medium text-black">Hi <span className='text-[var(--primarybg)] font-bold'> {user.name}! </span></h1>
+              <p className="text-[var(--font-light2)] mt-4">
                 Nice to have you back, what an exciting day!<br />
                 Get ready and continue your lesson today.
               </p>
@@ -173,37 +193,36 @@ export default function LanguageLearningDashboard() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className="bg-blue-100 rounded-full p-2 flex items-center justify-center w-12 h-12">
-                          <Clock className="h-6 w-6 text-blue-600" />
+                        <div className=" rounded-full p-2 flex items-center justify-center w-16 h-16">
+                          {/* <Clock className="h-6 w-6 text-blue-600" /> */}
+                          <img src={clock_image} alt="" />
                         </div>
-                        <div>
+                        <div className='py-2'>
                           <p className="text-xs text-gray-500">{task.date}</p>
                           <h3 className="font-medium">{task.title}</h3>
                           <p className="text-sm text-gray-500">{task.duration}</p>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <Button size="sm" className="bg-blue-100 hover:bg-blue-200 text-blue-700">
+                        <Button size="sm" className="bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-3xl">
                           Continue
                         </Button>
-                        <div className="flex items-center">
-                          <div className="flex -space-x-2">
-                            {[...Array(task.participants)].map((_, i) => (
-                              <div key={i} className="w-6 h-6 rounded-full bg-gray-300 border border-white flex items-center justify-center text-xs">
-                                {i + 1}
-                              </div>
-                            ))}
-                          </div>
-                          <Badge variant="outline" className="ml-1">
-                            {task.participants}
-                          </Badge>
-                        </div>
+
                       </div>
                     </div>
-                    <div className="mt-2">
+                    <div className="flex item-center justify-between mt-2 bg-gray-100 p-2 rounded-3xl">
                       <Button variant="link" size="sm" className="text-blue-600 p-0 h-auto flex items-center">
                         View Details <ChevronRight className="h-4 w-4 ml-1" />
                       </Button>
+                      <div className="flex items-center">
+                        <div className="flex -space-x-2">
+                          {[...Array(task.participants)].map((_, i) => (
+                            <div key={i} className="w-6 h-6 rounded-full bg-gray-300 border border-white flex items-center justify-center text-xs">
+                              {i + 1}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -211,7 +230,7 @@ export default function LanguageLearningDashboard() {
             </div>
 
             {/* Learning Modes */}
-            <h2 className="text-xl font-bold mt-8 mb-4">Learning Modes</h2>
+            {/* <h2 className="text-xl font-bold mt-8 mb-4">Learning Modes</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {learningModes.map((mode, index) => (
                 <div key={index} className="flex">
@@ -235,62 +254,16 @@ export default function LanguageLearningDashboard() {
                   </div>
                 </div>
               ))}
-            </div>
+            </div> */}
           </div>
 
           {/* Right Column - Calendar and Stats */}
           <div className="md:col-span-3">
-            {/* Grid with Profile on Left & Calendar on Right */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
-              <Card className="w-full max-w-md bg-slate-50 ">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-4 rounded-3xl gradientBg ">
-                    <div className="flex items-center">
-                      <div className="relative p-16 ">
-                        <div className="absolute top-16 left-4 w-20 h-20 rounded-lg overflow-hidden">
-                          <img
-                            src={user.profileImage}
-                            alt="Profile"
-                            className="w-full h-full object-cover border p-1 bg-white rounded-2xl"
-                          />
-                        </div>
-                        <div className="absolute -bottom-7 right-4 bg-yellow-300 rounded-full p-1">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#FFD700" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              <DashboardProfile />
 
-                  <div className="mb-8">
-                    <h3 className="text-xl font-bold mb-1">{user.name}</h3>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="flex-1 bg-white rounded-full px-6 py-3 text-center flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Achievements</span>
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-600 rounded-full px-3">
-                        {user.achievements}
-                      </Badge>
-                    </div>
-
-                    <div className="flex-1 bg-white rounded-full px-6 py-3 text-center flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Badges</span>
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-600 rounded-full px-3">
-                        {user.badges}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-
-
-
-              <div className='min-w-[300px] border rounded-md shadow'>
+              <div className='min-w-[250px] border rounded-md shadow'>
                 <Calendar
                   mode="single"
                   selected={date}
@@ -302,49 +275,112 @@ export default function LanguageLearningDashboard() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <Card className="bg-orange-400 text-white shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <BarChart2 className="h-6 w-6" />
-                    <h4 className="text-sm font-medium">Streak</h4>
-                  </div>
-                  <div className="text-4xl font-bold mt-2">{user.streak}</div>
-                </CardContent>
-              </Card>
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              {/* Left Side: Two Cards */}
+              <div className="flex flex-1 gap-4">
+                <Card className="bg-orange-400 text-white shadow-sm flex-1">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col items-start">
+                      <BarChart2 className="h-auto w-12" />
+                      <h4 className="text-sm font-medium">Streak</h4>
+                    </div>
+                    <div className="text-4xl font-bold mt-2 text-start">{user.streak}</div>
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-purple-500 text-white shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <Trophy className="h-6 w-6" />
-                    <h4 className="text-sm font-medium">Ranking</h4>
+                <Card className="bg-purple-500 text-white shadow-sm flex-1">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col items-center">
+                      <Trophy className="h-auto w-20" />
+                      <h4 className="text-sm font-medium">Ranking</h4>
+                    </div>
+                    <div className="text-4xl font-bold mt-2 text-center">{user.ranking}</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Right Side: Levels */}
+              <div className="flex-1 bg-gray-100 rounded-lg p-4 flex flex-col gap-2">
+                <div className="flex items-center gap-4 mb-4">
+                  <img src={Badge_04} alt="" />
+                  <div>
+                    <h4 className="text-xl font-bold">Level 3</h4>
+                    <p className="text-sm mt-1 text-[var(--font-light2)]">Here is the level of your progress</p>
                   </div>
-                  <div className="text-4xl font-bold mt-2">{user.ranking}</div>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="bg-blue-500 h-full w-75"></div> {/* 75% progress */}
+                </div>
+
+                <p className='mt-2 text-[var(--font-light2)]'>75 percent so progress in sum</p>
+              </div>
             </div>
 
-            {/* Level Card */}
-            <Card className="shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-yellow-100 p-2 rounded-full">
-                    <Trophy className="h-6 w-6 text-yellow-500" />
+
+              {/* Learning Modes */}
+            <div className='p-6 bg-gray-100 rounded-3xl'>
+              <h1 className='font-bold text-2xl mb-6'>Learning Modes</h1>
+
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+                {modes.map((mode, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col lg:flex-row  border border-gray-150 rounded-3xl p-4 bg-white hover:shadow-md transition-shadow duration-300"
+                  >
+                    {/* Top row for mobile/tablet/small screens */}
+                    <div className="flex w-full items-center justify-between mb-4 lg:hidden">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <img
+                          src={mode.image}
+                          alt={`${mode.title} avatar`}
+                          className="w-16 h-16 object-contain"
+                        />
+                        <h2 className="text-lg font-bold text-[var(--font-dark)]">{mode.title}</h2>
+                      </div>
+                      <Button
+                        className="text-[var(--font-dark)] font-bold bg-[var(--cardbg)] hover:bg-[var(--cardbg)] active:bg-[var(--cardbg)] focus:bg-[var(--cardbg)] rounded-full"
+                        onClick={() => { }}
+                      >
+                        Start
+                      </Button>
+                    </div>
+
+                    {/* Description below on mobile/tablet */}
+                    <p className="text-sm text-[var(--font-light2)] mb-4 lg:hidden text-left">
+                      {mode.description}
+                    </p>
+
+                    {/* Large screen layout */}
+                    <div className="hidden lg:flex font-sans flex-1 mb-6 lg:mb-0 lg:mr-6 flex-col">
+                      <h2 className="text-xl font-bold text-[var(--font-dark)] mb-4">{mode.title}</h2>
+                      <p className="text-sm text-[var(--font-light2)] mb-4">{mode.description}</p>
+                      <Button
+                        className="text-[var(--font-dark)] font-bold bg-[var(--cardbg)] hover:bg-[var(--cardbg)] active:bg-[var(--cardbg)] focus:bg-[var(--cardbg)] rounded-full ml-2 mt-2 lg:w-16 w-full"
+                        onClick={() => { }}
+                      >
+                        Start
+                      </Button>
+
+                    </div>
+
+                    {/* Image on large screens */}
+                    <div className="hidden lg:flex w-40 h-40 flex-shrink-0 items-center justify-center">
+                      <img
+                        src={mode.image}
+                        alt={`${mode.title} avatar`}
+                        className="w-32 h-32 object-contain"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold">Level {user.level}</h3>
-                    <p className="text-xs text-gray-500">Here is the level of your progress</p>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>{user.progress} percent</span>
-                    <span>in xam</span>
-                  </div>
-                  <Progress value={user.progress} className="h-2" />
-                </div>
-              </CardContent>
-            </Card>
+
+
+                ))}
+              </div>
+
+            </div>
+
+
+
           </div>
 
         </div>
