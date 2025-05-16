@@ -106,6 +106,7 @@ export interface LeaderboardUser {
   // cefrLevel: string;
   aiCefrLevel	: string;
   totalSeconds: number;
+  completedTopics: number;
 }
 
 interface LeaderboardState {
