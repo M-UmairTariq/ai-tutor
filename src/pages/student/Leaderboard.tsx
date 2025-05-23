@@ -512,7 +512,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId: _initialUserId }) => 
       </div>
 
       {showFixedUserBar && currentUser && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-3 z-50 border-t">
+        <div className="fixed bottom-0 left-0 right-0 shadow-lg p-3 z-50">
           {/* Mobile Fixed Bar */}
           <div className="block md:hidden">
             <div className="flex items-center justify-between px-2">
@@ -545,7 +545,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId: _initialUserId }) => 
           </div>
 
           {/* Desktop Fixed Bar */}
-          <div className="hidden md:block container mx-auto px-4">
+          {/* <div className="hidden md:block container mx-auto px-4">
             <table className="w-full">
               <tbody>
                 <tr className="bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100">
@@ -586,7 +586,53 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId: _initialUserId }) => 
                 </tr>
               </tbody>
             </table>
-          </div>
+          </div> */}
+
+{/* Desktop Fixed Bar */}
+<div className="hidden md:block container mx-auto px-4 max-w-[1600px] float-end">
+  <div className="overflow-x-auto">
+    <table className="w-full">
+      <tbody>
+        <tr className="bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100">
+          <td className="py-3 px-3 font-medium text-blue-700" style={{width: '60px'}}>{currentUser.rank !== null ? currentUser.rank : '-'}</td>
+          <td className="py-3 px-3" style={{width: '200px'}}>
+            <div className="flex items-center">
+              <div className="w-9 h-9 rounded-full bg-gray-200 mr-3 overflow-hidden ring-2 ring-blue-500 ring-offset-1 flex-shrink-0">
+                <img
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.username}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
+                  alt={currentUser.firstName}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <div className="font-semibold text-blue-700">
+                  {currentUser.firstName} {currentUser.lastName?.charAt(0) || ''}.
+                  <span className="ml-1 text-xs text-blue-600 font-bold">(You)</span>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td className="py-3 px-3 text-sm text-blue-600" style={{width: '150px'}}>{currentUser.schoolName || '-'}</td>
+          <td className="py-3 px-3" style={{width: '120px'}}>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLevelBadgeColor(currentUser.aiCefrLevel)} border border-blue-300`}>
+              {currentUser.aiCefrLevel || 'N/A'}
+            </span>
+          </td>
+          <td className="py-3 px-3" style={{width: '120px'}}>
+            <div className="inline-block bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full text-sm font-medium">
+              {formatTime(currentUser.totalSeconds)}
+            </div>
+          </td>
+          <td className="py-3 px-3" style={{width: '150px'}}>
+            <div className="inline-block bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full text-sm font-medium">
+              {currentUser.completedTopics || 0}
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
         </div>
       )}
     </div>
