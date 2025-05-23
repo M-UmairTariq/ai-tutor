@@ -14,33 +14,66 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { login } from '@/redux/slices/authSlice';
-import { useEffect } from 'react';
+import { login, addPhoneNumber, clearError } from '@/redux/slices/authSlice';
+import { useEffect, useState } from 'react';
+// import { ArrowLeft } from 'lucide-react';
 
-const formSchema = z.object({
+// Username form schema
+const usernameFormSchema = z.object({
   username: z.string().min(1, { message: 'Username is required' }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+// Phone number form schema
+const phoneFormSchema = z.object({
+  phoneNumber: z.string().min(10, { message: 'Valid phone number is required' }),
+});
+
+type UsernameFormValues = z.infer<typeof usernameFormSchema>;
+type PhoneFormValues = z.infer<typeof phoneFormSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { error, isAuthenticated, user, isLoading } = useAppSelector((state) => state.auth);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  // State to track whether we're showing the phone number input
+  const [showPhoneInput, setShowPhoneInput] = useState(false);
+  // Store username for later use with phone number submission
+  const [currentUsername, setCurrentUsername] = useState('');
+  // Store whether we're currently submitting the phone number
+  const [isSubmittingPhone, setIsSubmittingPhone] = useState(false);
+
+  // Username form
+  const usernameForm = useForm<UsernameFormValues>({
+    resolver: zodResolver(usernameFormSchema),
     defaultValues: {
       username: '',
+    },
+  });
+
+
+  // Phone number form
+  const phoneForm = useForm<PhoneFormValues>({
+    resolver: zodResolver(phoneFormSchema),
+    defaultValues: {
+      phoneNumber: '',
     },
   });
 
   useEffect(() => {
     console.log('Auth status:', isAuthenticated, user);
     if (isAuthenticated && user) {
-      navigateUser(user);
+      // Check if user has phone number
+      if (user.phoneNumber) {
+        navigateUser(user);
+      } else {
+        // Show phone number input if no phone number exists
+        setShowPhoneInput(true);
+        // Clear any previous phone number in the form when switching to phone input
+        phoneForm.reset({ phoneNumber: '' });
+      }
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, phoneForm]);
 
   const navigateUser = (user: any) => {
     if (!user.role || user.role === 'student') {
@@ -52,8 +85,16 @@ export default function LoginPage() {
     }
   };
 
-  const onSubmit = async (data: FormValues) => {
+  // Handle back button click
+  const handleBackToUsername = () => {
+    setShowPhoneInput(false);
+    dispatch(clearError()); // Clear any errors when going back
+  };
+
+  const onUsernameSubmit = async (data: UsernameFormValues) => {
     try {
+      setCurrentUsername(data.username);
+
       const resultAction = await dispatch(
         login({
           username: data.username
@@ -61,12 +102,40 @@ export default function LoginPage() {
       );
 
       if (login.fulfilled.match(resultAction)) {
-        toast.success('Login successful');
-        navigateUser(resultAction.payload.user);
+        // If user has phone number, will be redirected by useEffect
+        // Otherwise, phone input will be shown
+        if (resultAction.payload.user.phoneNumber) {
+          toast.success('Login successful');
+          navigateUser(resultAction.payload.user);
+        }
       }
     } catch (error) {
       console.error('Login failed:', error);
       toast.error('Login failed. Please try again.');
+    }
+  };
+
+  const onPhoneSubmit = async (data: PhoneFormValues) => {
+    try {
+      setIsSubmittingPhone(true);
+      const resultAction = await dispatch(
+        addPhoneNumber({
+          username: currentUsername,
+          phoneNumber: data.phoneNumber
+        })
+      );
+
+      if (addPhoneNumber.fulfilled.match(resultAction)) {
+        toast.success('Phone number added successfully');
+        setTimeout(() => {
+          navigateUser(resultAction.payload.user);
+        })
+      }
+    } catch (error) {
+      console.error('Adding phone number failed:', error);
+      toast.error('Failed to add phone number. Please try again.');
+    } finally {
+      setIsSubmittingPhone(false);
     }
   };
 
@@ -76,10 +145,12 @@ export default function LoginPage() {
         <div className="mx-auto max-w-md w-full p-8 md:px-[64px] md:py-[44px]">
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-sans font-medium text-[var(--font-dark)]">
-              Welcome back
+              {showPhoneInput ? 'Enter Phone Number' : 'Welcome back'}
             </h1>
             <p className="mt-2 text-[var(--font-light2)]">
-              Please enter your credentials to continue.
+              {showPhoneInput
+                ? 'Please enter your phone number to continue.'
+                : 'Please enter your credentials to continue.'}
             </p>
           </div>
 
@@ -89,35 +160,99 @@ export default function LoginPage() {
             </div>
           )}
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[var(--font-dark)] font-semibold">Username</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter your username"
-                        className="h-14 rounded-sm"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {!showPhoneInput ? (
+            // Username Form
+            <Form {...usernameForm}>
+              <form onSubmit={usernameForm.handleSubmit(onUsernameSubmit)} className="space-y-6">
+                <FormField
+                  control={usernameForm.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[var(--font-dark)] font-semibold">Username</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter your username"
+                          className="h-14 rounded-sm"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <Button
-                type="submit"
-                className="w-full bg-[var(--primarybg)] hover:bg-[var(--primarybg)]/90 rounded-full h-14 text-white font-semibold flex items-center justify-center mt-2"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Signing in...' : 'Log In'}
-              </Button>
-            </form>
-          </Form>
+                <Button
+                  type="submit"
+                  className="w-full bg-[var(--primarybg)] hover:bg-[var(--primarybg)]/90 rounded-full h-14 text-white font-semibold flex items-center justify-center mt-2"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Signing in...' : 'Log In'}
+                </Button>
+              </form>
+            </Form>
+          ) : (
+            // Phone Number Form
+            <>
+
+              <Form {...phoneForm}>
+                <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-6">
+                  <FormField
+                    control={phoneForm.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[var(--font-dark)] font-semibold">Phone Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter your phone number"
+                            className="h-14 rounded-sm"
+                            type="tel"
+                            value={field.value}
+                            onChange={(e) => {
+                              const onlyNums = e.target.value.replace(/\D/g, '');
+                              field.onChange(onlyNums);
+                            }}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                          />
+
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-[var(--primarybg)] hover:bg-[var(--primarybg)]/90 rounded-full h-14 text-white font-semibold flex items-center justify-center mt-2"
+                    disabled={isSubmittingPhone}
+                  >
+                    {isSubmittingPhone ? 'Adding...' : 'Add'}
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="w-full bg-white hover:bg-slate-200 rounded-full h-14 text-black font-semibold flex items-center justify-center mt-2"
+                    onClick={handleBackToUsername}
+                  >
+                    Back
+                  </Button>
+
+                  {/* <div className="mb-4">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  className="flex items-center text-[var(--font-light2)] hover:text-[var(--font-dark)]"
+                  onClick={handleBackToUsername}
+                >
+                  <ArrowLeft className="mr-1 h-4 w-4" />
+                  Back to username
+                </Button>
+              </div> */}
+                </form>
+              </Form>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -21,6 +21,11 @@ export interface LoginCredentials {
   username: string;
 }
 
+export interface PhoneNumberCredentials {
+  username: string;
+  phoneNumber: string;
+}
+
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -43,6 +48,44 @@ export const login = createAsyncThunk(
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
       const response = await axios.post('https://tutorapp-cyfeg4ghe7gydbcy.uaenorth-01.azurewebsites.net/api/auth/login', credentials);
+      
+      const data = response.data as AuthResponse;
+      
+      const userWithRole = {
+        ...data.user,
+        role: 'student' as UserRole
+      };
+      
+      localStorage.setItem('AiTutorUser', JSON.stringify(userWithRole));
+      
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      
+      return {
+        user: userWithRole,
+        token: data.token || null,
+        message: data.message
+      };
+    } catch (error: any) {
+      // Handle errors from the API
+      if (error.response && error.response.data) {
+        return rejectWithValue(error.response.data.message || 'An unknown error occurred');
+      }
+      return rejectWithValue(error.message || 'An unknown error occurred');
+    }
+  }
+);
+
+// Add phone number thunk
+export const addPhoneNumber = createAsyncThunk(
+  'auth/addPhoneNumber',
+  async (credentials: PhoneNumberCredentials, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        'https://tutorapp-cyfeg4ghe7gydbcy.uaenorth-01.azurewebsites.net/api/auth/add-phone',
+        credentials
+      );
       
       const data = response.data as AuthResponse;
       
@@ -109,6 +152,24 @@ const authSlice = createSlice({
         state.error = action.payload as string;
         state.isAuthenticated = false;
       })
+      
+      // Add phone number
+      .addCase(addPhoneNumber.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(addPhoneNumber.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(addPhoneNumber.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
       // Logout
       .addCase(logout.fulfilled, (state) => {
         state.user = null;

@@ -320,7 +320,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
       const isCompleted = msg.chatHistory.some((m: any) => m.isCompleted);
       setChatCompleted(isCompleted);
       if (isCompleted) {
-        // setIsCompleteDialogOpen(true);
+        setIsCompleteDialogOpen(true);
         toast.error("This chat has been completed.");
       }
     }
@@ -373,6 +373,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
     }
     if (msg.message.includes("This chat has been completed")) {
       setChatCompleted(true);
+      setIsCompleteDialogOpen(true);
       setIsCompleteDialogOpen(true);
       toast.error("This chat has been completed.");
       removeLoadingMessage();
@@ -652,6 +653,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
   const handleResetChatNo = () => {
     setIsCompleteDialogOpen(false)
   }
+
 
   const resetChat = () => {
     const ws = wsRef.current;
