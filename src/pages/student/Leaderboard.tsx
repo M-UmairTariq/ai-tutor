@@ -589,7 +589,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ userId: _initialUserId }) => 
           </div> */}
 
 {/* Desktop Fixed Bar */}
-<div className="hidden md:block container mx-auto px-4 max-w-[1600px] float-end">
+<div className="hidden md:block container mx-auto px-4 max-w-[1400px] float-end">
   <div className="overflow-x-auto">
     <table className="w-full">
       <tbody>
