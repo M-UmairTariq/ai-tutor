@@ -120,15 +120,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
     }
   }, []);
 
-  // const resetActivityTimer = () => {
-  //   clearTimeout(activityTimerId.current as NodeJS.Timeout);
-  //   activityTimerId.current = setTimeout(() => {
-  //     console.log("Inactivity detected. Closing WebSocket and showing dialog.");
-  //     intentionalDisconnectRef.current = true;
-  //     wsRef.current?.close();
-  //     setIsInactiveDialogOpen(true);
-  //   }, 60 * 1000 * 2);
-  // };
   const resetActivityTimer = () => {
     clearTimeout(activityTimerId.current as NodeJS.Timeout);
     activityTimerId.current = setTimeout(() => {
@@ -775,12 +766,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
               </div>
             )}
             {msg.messageType === "audio" && <audio className="message-audio" src={msg.audioURL} controls />}
-            {/* {msg.messageType === "audio" && (
-              <WhatsAppAudioPlayer 
-                audioUrl={msg.audioURL} 
-                isUserMessage={msg.type === "sent"} 
-              />
-            )} */}
           </div>
         ))}
         <div ref={messagesEndRef} />

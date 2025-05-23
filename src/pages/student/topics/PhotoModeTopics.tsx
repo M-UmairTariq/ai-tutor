@@ -84,11 +84,8 @@ const PhotoModeTopics = () => {
                   />
                 </div>
 
-                <CardContent className="flex-grow p-4">
+                <CardContent className="flex gap-6 justify-end items-center flex-grow p-4">
                   <h3 className="font-medium text-base">{topic.topicName}</h3>
-                </CardContent>
-
-                <CardFooter className="flex justify-end p-4 pt-0">
                   <Link to={`/student/learning-mode/${topic?.id}/${topic?.topicName}?mode=photo-mode`} >
 
                     <Button
@@ -97,7 +94,8 @@ const PhotoModeTopics = () => {
                       Start
                     </Button>
                   </Link>
-                </CardFooter>
+                </CardContent>
+
               </Card>
             ))
           ) : (
