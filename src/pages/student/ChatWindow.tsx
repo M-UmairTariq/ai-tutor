@@ -120,12 +120,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
     }
   }, []);
 
+  // const resetActivityTimer = () => {
+  //   clearTimeout(activityTimerId.current as NodeJS.Timeout);
+  //   activityTimerId.current = setTimeout(() => {
+  //     console.log("Inactivity detected. Closing WebSocket and showing dialog.");
+  //     intentionalDisconnectRef.current = true;
+  //     wsRef.current?.close();
+  //     setIsInactiveDialogOpen(true);
+  //   }, 60 * 1000 * 2);
+  // };
   const resetActivityTimer = () => {
     clearTimeout(activityTimerId.current as NodeJS.Timeout);
     activityTimerId.current = setTimeout(() => {
       console.log("Inactivity detected. Closing WebSocket and showing dialog.");
       intentionalDisconnectRef.current = true;
-      wsRef.current?.close();
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null; // Add this line
+        console.warn("WebSocket Disconnected! Due to Inactivity")
+      }
       setIsInactiveDialogOpen(true);
     }, 60 * 1000 * 2);
   };
@@ -624,6 +637,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
     setIsInactiveDialogOpen(false);
     intentionalDisconnectRef.current = false;
     console.log("User wants to continue. Reconnecting WebSocket...");
+    wsRef.current = null
     connectWebSocket();
   };
 
@@ -648,6 +662,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
         })
       );
       resetActivityTimer();
+      wsRef.current = null
+      connectWebSocket()
     } else {
       connectWebSocket();
       const onOpen = () => {
@@ -757,6 +773,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
               </div>
             )}
             {msg.messageType === "audio" && <audio className="message-audio" src={msg.audioURL} controls />}
+            {/* {msg.messageType === "audio" && (
+              <WhatsAppAudioPlayer 
+                audioUrl={msg.audioURL} 
+                isUserMessage={msg.type === "sent"} 
+              />
+            )} */}
           </div>
         ))}
         <div ref={messagesEndRef} />
@@ -835,7 +857,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
           <DialogHeader>
             <DialogTitle>Do you want to reset and start over?</DialogTitle>
             <DialogDescription>
-              Your session was paused due to inactivity. Do you want to continue?
+              This Topic is Completeted. Click Reset if want to StartOver
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
