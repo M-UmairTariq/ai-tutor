@@ -643,6 +643,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
 
   const handleResetChatNo = () => {
     setIsCompleteDialogOpen(false)
+    navigate(-1)
   }
 
 
