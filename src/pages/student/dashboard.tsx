@@ -1,390 +1,323 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import {
-  Card,
-  CardContent,
-  // CardHeader,
-  // CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+// import { Progress } from '@/components/ui/progress';
 import {
-  Clock,
-  MessageCircle,
-  ChevronRight,
-  Trophy,
-  BarChart2,
-  // Book,
-  // CheckCircle,
-  // User,
-  // ArrowRight
+    // Clock,
+    // MessageCircle,
+    // ChevronRight,
+    // Trophy,
+    BarChart2,
+    Activity,
+    CheckSquare,
 } from 'lucide-react';
-
-import clock_image from "@/assets/images/clock_image.png"
 
 import { Calendar } from "@/components/ui/calendar"
 import Badge_04 from "@/assets/images/Badge_04.png"
 import DashboardProfile from '@/components/ui/DashboardProfile';
-import chatModeAvatar from "@/assets/svgs/chatModeAvatar.svg";
-import photoModeAvatar from "@/assets/svgs/photoModeAvatar.svg";
-
+// import { BarChartComponent } from '@/components/ui/barChartComponent';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { fetchDashboardData } from '@/redux/slices/dashboardSlice';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LanguageLearningDashboard() {
-  const [activeTab, setActiveTab] = useState('all');
-  const [date, setDate] = useState<Date | undefined>(new Date())
+    const myUser = localStorage.getItem("AiTutorUser");
+    let parsedUser = JSON.parse(myUser || '{}');
+    const currentUserId = parsedUser?.id;
 
-  const modes = [
-    {
-      title: "Chat Mode",
-      description: "Enhance your language skills by chatting with our AI.",
-      image: chatModeAvatar,
-      route: "/student/learning-modes/chat-mode",
-    },
-    {
-      title: "Photo Mode",
-      description: "Let's break down images and get instant feedback from AI.",
-      image: photoModeAvatar,
-      route: "/student/learning-modes/photo-mode",
-    },
-  ];
+    const dispatch = useAppDispatch();
+    const { data, isLoading } = useAppSelector(state => state.dashboard);
 
-  const user = {
-    name: "Huynam Moinon",
-    email: "huynammoinon@gmail.com",
-    level: 3,
-    progress: 75,
-    streak: 24,
-    ranking: 12,
-    achievements: 9,
-    badges: 5,
-    profileImage: 'https://randomuser.me/api/portraits/men/75.jpg'
+    useEffect(() => {
+        dispatch(fetchDashboardData(currentUserId));
+    }, []);
 
-  };
+    const user = data?.userInfo;
+    const usageRecords = data?.usageRecords;
 
-  // Mock task data
-  const tasks = [
-    {
-      id: 1,
-      title: "Chat With Emma",
-      date: "22 dec 2023",
-      duration: "20 min",
-      participants: 2,
-      completed: false,
-      expired: false
-    },
-    {
-      id: 2,
-      title: "Chat With Emma",
-      date: "22 dec 2023",
-      duration: "20 min",
-      participants: 2,
-      completed: false,
-      expired: false
-    },
-    {
-      id: 3,
-      title: "Chat With Emma",
-      date: "22 dec 2023",
-      duration: "20 min",
-      participants: 2,
-      completed: false,
-      expired: false
-    }
-  ];
-
-  // Mock calendar data
-  // const currentMonth = "January 2024";
-  // const currentDate = 21;
-
-  // const calendarDays = [
-  //   { day: "MO", dates: [1, 8, 15, 22, 29] },
-  //   { day: "TU", dates: [2, 9, 16, 23, 30] },
-  //   { day: "WE", dates: [3, 10, 17, 24, 31] },
-  //   { day: "TH", dates: [4, 11, 18, 25, null] },
-  //   { day: "FR", dates: [5, 12, 19, 26, null] },
-  //   { day: "SA", dates: [6, 13, 20, 27, null] },
-  //   { day: "SU", dates: [7, 14, 21, 28, null] },
-  // ];
-
-  // Learning modes
-  const learningModes = [
-    {
-      title: "Chat",
-      description: "Enhance your language skills by chatting with our AI teacher.",
-      icon: <MessageCircle className="h-6 w-6 text-white" />
-    }
-  ];
-
-  return (
-    <div className="flex flex-col min-h-screen border border-[var(--border-light)] rounded-3xl">
-      {/* Main Content */}
-      <div className="flex-1 container mx-auto px-4 py-4">
+    // const myTopics = {
+    //     "chat-mode": 3,
+    //     "Dialogue-mode": 3,
+    //     "funny-mode": 3,
+    //     "photo-mode": 5
+    // }
 
 
-
-        {/* <Card className="w-full md:w-64 mt-4 md:mt-0 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <div className="bg-blue-100 rounded-full p-2">
-                  <User className="h-8 w-8 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium">{user.name}</h3>
-                  <p className="text-xs text-gray-500">{user.email}</p>
-                </div>
-              </div>
-              
-              <div className="flex justify-between mt-3">
-                <div className="text-center">
-                  <Button variant="ghost" className="p-1 h-auto flex flex-col">
-                    <span>Achievements</span>
-                    <span className="text-xl font-bold">5</span>
-                  </Button>
-                </div>
-                <div className="text-center">
-                  <Button variant="ghost" className="p-1 h-auto flex flex-col">
-                    <span>Badges</span>
-                    <span className="text-xl font-bold">5</span>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card> */}
-
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          {/* Left Column - Tasks */}
-          <div className="md:col-span-2 bg-gray-50 rounded-3xl ">
-            <div className='mb-4'>
-              <h1 className="text-3xl font-medium text-black">Hi <span className='text-[var(--primarybg)] font-bold'> {user.name}! </span></h1>
-              <p className="text-[var(--font-light2)] mt-4">
-                Nice to have you back, what an exciting day!<br />
-                Get ready and continue your lesson today.
-              </p>
-            </div>
-            <h2 className="text-xl font-bold mb-4 text-[var(--font-dark)]">Today Tasks</h2>
-
-            {/* Task Tabs */}
-            <div className="flex gap-4 mb-4 bg-gray-100 px-1 py-1 rounded-lg">
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`flex-1 rounded-xl py-21  ${activeTab === 'all' ? 'bg-white text-[var(--text-color-1)]' : 'bg-gray-100 text-[var(--text-color-2)] '}`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setActiveTab('completed')}
-                className={`flex-1 rounded-xl py-2  ${activeTab === 'completed' ? 'bg-white text-[var(--text-color-1)]' : 'bg-gray-100 text-[var(--text-color-2)]'}`}
-              >
-                Completed
-              </button>
-              <button
-                onClick={() => setActiveTab('expired')}
-                className={`flex-1 rounded-xl py-2  ${activeTab === 'expired' ? 'bg-white text-[var(--text-color-1)]' : 'bg-gray-100 text-[var(--text-color-2)]'}`}
-              >
-                Expired
-              </button>
-            </div>
-
-
-            {/* Task List */}
-            <div className="space-y-4">
-              {tasks.map((task) => (
-                <Card key={task.id} className="shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className=" rounded-full p-2 flex items-center justify-center w-16 h-16">
-                          {/* <Clock className="h-6 w-6 text-blue-600" /> */}
-                          <img src={clock_image} alt="" />
-                        </div>
-                        <div className='py-2'>
-                          <p className="text-xs text-gray-500">{task.date}</p>
-                          <h3 className="font-medium">{task.title}</h3>
-                          <p className="text-sm text-gray-500">{task.duration}</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Button size="sm" className="bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-3xl">
-                          Continue
-                        </Button>
-
-                      </div>
-                    </div>
-                    <div className="flex item-center justify-between mt-2 bg-gray-100 p-2 rounded-3xl">
-                      <Button variant="link" size="sm" className="text-blue-600 p-0 h-auto flex items-center">
-                        View Details <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                      <div className="flex items-center">
-                        <div className="flex -space-x-2">
-                          {[...Array(task.participants)].map((_, i) => (
-                            <div key={i} className="w-6 h-6 rounded-full bg-gray-300 border border-white flex items-center justify-center text-xs">
-                              {i + 1}
+    return (
+        <div className="flex flex-col  border border-[var(--border-light)] rounded-3xl container p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 md:gap-6 mb-6 w-full mx-auto">
+                {isLoading ? (
+                    // Profile Skeleton
+                    <div className="col-span-1 border rounded-lg shadow p-4">
+                        <div className="flex items-center space-x-4">
+                            <Skeleton className="h-16 w-16 rounded-full" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-5 w-36" />
+                                <Skeleton className="h-4 w-24" />
                             </div>
-                          ))}
                         </div>
-                      </div>
+                        <div className="mt-4 space-y-3">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
+                        </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                ) : (
 
-            {/* Learning Modes */}
-            {/* <h2 className="text-xl font-bold mt-8 mb-4">Learning Modes</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {learningModes.map((mode, index) => (
-                <div key={index} className="flex">
-                  <Card className="flex-1 shadow-sm">
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold mb-2">{mode.title}</h3>
-                      <p className="text-gray-600 mb-4">{mode.description}</p>
-                      <Button>
-                        Start {mode.title}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                  <div className="flex items-end ml-2">
-                    <div className="bg-blue-100 rounded-lg w-24 h-24 flex items-center justify-center overflow-hidden">
-                      <img
-                        src="/api/placeholder/100/100"
-                        alt="AI Teacher"
-                        className="w-20 h-20 object-cover"
-                      />
+                    <DashboardProfile user={user} />
+                )}
+
+                {isLoading ? (
+                    // Calendar Skeleton
+                    <div className="min-w-[350px] col-span-2 border rounded-lg shadow p-4">
+                        <div className="space-y-2">
+                            <Skeleton className="h-6 w-48" />
+                            <div className="grid grid-cols-7 gap-2 mt-2">
+                                {Array.from({ length: 7 }).map((_, index) => (
+                                    <Skeleton key={index} className="h-4 w-8" />
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-7 gap-2 mt-4">
+                                {Array.from({ length: 35 }).map((_, index) => (
+                                    <Skeleton key={index} className="h-10 w-10 rounded-md" />
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div> */}
-          </div>
-
-          {/* Right Column - Calendar and Stats */}
-          <div className="md:col-span-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-              <DashboardProfile />
-
-              <div className='min-w-[250px] border rounded-md shadow'>
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className=""
-                />
-              </div>
-
+                ) : (
+                    <div className='min-w-[300px] col-span-2 border rounded-lg shadow'>
+                        <Calendar
+                            mode="single"
+                            usageRecords={usageRecords}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Stats Cards */}
             <div className="flex flex-col md:flex-row gap-4 mb-6">
-              {/* Left Side: Two Cards */}
-              <div className="flex flex-1 gap-4">
-                <Card className="bg-orange-400 text-white shadow-sm flex-1">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col items-start">
-                      <BarChart2 className="h-auto w-12" />
-                      <h4 className="text-sm font-medium">Streak</h4>
-                    </div>
-                    <div className="text-4xl font-bold mt-2 text-start">{user.streak}</div>
-                  </CardContent>
+                {isLoading ? (
+                    <>
+                        {/* Stats Card Skeletons */}
+                        <div className="flex flex-1 gap-4">
+                            <Card className="flex-1 shadow-sm">
+                                <CardContent className="p-4">
+                                    <Skeleton className="h-12 w-12 mb-2" />
+                                    <Skeleton className="h-4 w-16 mb-2" />
+                                    <Skeleton className="h-10 w-24" />
+                                </CardContent>
+                            </Card>
+
+                            <Card className="flex-1 shadow-sm">
+                                <CardContent className="p-4">
+                                    <Skeleton className="h-12 w-12 mb-2" />
+                                    <Skeleton className="h-4 w-16 mb-2" />
+                                    <Skeleton className="h-10 w-24" />
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Level Card Skeleton */}
+                        <div className="flex-1 bg-gray-100 rounded-lg p-4">
+                            <div className="flex items-center gap-4 mb-4">
+                                <Skeleton className="h-12 w-12 rounded" />
+                                <div>
+                                    <Skeleton className="h-6 w-24 mb-2" />
+                                    <Skeleton className="h-4 w-48" />
+                                </div>
+                            </div>
+                            <Skeleton className="h-4 w-full rounded-full" />
+                            <Skeleton className="h-4 w-32 mt-2" />
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Left Side: Two Cards */}
+                        <div className="flex flex-1 gap-4">
+                            <Card className="bg-orange-400 text-white shadow-sm flex-1  ">
+                                <CardContent className="p-4 flex flex-col justify-evenly h-full">
+                                    <div className="flex flex-col items-start">
+                                        <BarChart2 className="h-auto w-12" />
+                                    </div>
+                                    <h4 className="text-md font-medium mt-2">Streak</h4>
+
+                                    <div className="text-4xl font-bold mt-2 text-start">{data?.streak}</div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="bg-purple-500 text-white shadow-sm flex-1">
+                                <CardContent className="p-4 flex flex-col justify-evenly h-full">
+                                    <div className="flex flex-col items-start">
+                                        <Activity className="h-auto w-12" />
+                                    </div>
+                                    <h4 className="text-md font-medium mt-2">Daily Usage</h4>
+                                    <div className="text-4xl font-bold mt-2 text-start">{data?.dailyUsage}</div>
+                                </CardContent>
+                            </Card>
+
+                            {/* <Card className="bg-blue-400 text-white shadow-sm flex-1">
+                                <CardContent className="p-4 flex flex-col justify-start h-full">
+                                    <h4 className="text-md font-medium mt-2">Completed Topics</h4>
+
+                                    <div className="mt-4 space-y-2">
+                                        {data?.completedTopics &&
+                                            Object.entries(data.completedTopics).map(([mode, count]) => (
+                                                <div key={mode} className="flex justify-between text-lg font-semibold">
+                                                    <span className="capitalize">{mode.replace(/-/g, ' ')}</span>
+                                                    <span>{count}</span>
+                                                </div>
+                                            ))}
+                                    </div>
+                                </CardContent>
+                            </Card> */}
+
+
+                        </div>
+
+                        {/* Right Side: Levels */}
+                        <div className="flex-1 gradientBg rounded-lg p-4 flex flex-col gap-4">
+                            <div className="flex items-center gap-4">
+                                <img src={Badge_04} alt="Streak Badge" className="w-12 h-12" />
+                                <div>
+                                    <h4 className="text-xl font-bold">Longest Streak</h4>
+                                    <p className="text-sm mt-1 text-gray-500">Your highest consecutive days</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-center h-32 bg-white rounded-lg shadow-inner">
+                                <span className="text-5xl font-extrabold text-blue-600">{data?.longestStreak}</span>
+                                <span className="text-lg ml-2 text-gray-600">days</span>
+                            </div>
+
+                            <p className="text-sm text-gray-500 text-center mt-2">Keep up the momentum!</p>
+                        </div>
+
+                    </>
+                )}
+            </div>
+
+            <div className="w-full">
+                <Card className="shadow-md border-slate-200">
+                    <CardHeader className="bg-gradient-to-r gradientBg pb-4 border-b border-slate-100">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                {isLoading ? (
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-6 w-48" />
+                                        <Skeleton className="h-4 w-64" />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <CardTitle className="text-xl md:text-2xl font-bold text-slate-800">
+                                            Completed Topics
+                                        </CardTitle>
+                                        <CardDescription className="text-slate-600">
+                                            Your progress across learning modules
+                                        </CardDescription>
+                                    </>
+                                )}
+                            </div>
+
+                            {isLoading ? (
+                                <Skeleton className="h-8 w-24 rounded-full" />
+                            ) : (
+                                <Badge className="bg-blue-500 hover:bg-blue-600  px-2 py-2 md:px-4 md:py-3">
+                                    {data?.completedTopics
+                                        ? Object.keys(data.completedTopics).length
+                                        : 0}{' '}
+                                    Topics
+                                </Badge>
+                            )}
+                        </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-6">
+                        {isLoading ? (
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                {Array.from({ length: 4 }).map((_, index) => (
+                                    <div
+                                        key={index}
+                                        className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-300 shadow-sm"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Skeleton className="w-10 h-10 rounded-full" />
+                                            <div>
+                                                <Skeleton className="h-4 w-40 mb-2" />
+                                                <Skeleton className="h-3 w-24" />
+                                            </div>
+                                        </div>
+                                        <Skeleton className="h-8 w-8 rounded-full" />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : data?.completedTopics &&
+                            Object.keys(data.completedTopics).length > 0 ? (
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                {Object.entries(data?.completedTopics).map(([topic, count]) => (
+                                    <div
+                                        key={topic}
+                                        className="flex flex-wrap items-center justify-between p-4 bg-white rounded-lg border border-slate-300 shadow-sm"
+                                    >
+                                        <div className="flex items-center">
+                                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-50 text-green-600 mr-3">
+                                                <CheckSquare size={20} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-medium text-slate-800">
+                                                    {topic
+                                                        .split('-')
+                                                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                                        .join(' ')}
+                                                </h3>
+                                                <p className="text-sm text-slate-500">
+                                                    {count} completed {count === 1 ? 'item' : 'items'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border border-green-200">
+                                            {count}
+                                        </Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center text-slate-500 text-sm py-8">
+                                No completed topics yet. Keep learning and your progress will show up
+                                here!
+                            </div>
+                        )}
+                    </CardContent>
                 </Card>
-
-                <Card className="bg-purple-500 text-white shadow-sm flex-1">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col items-center">
-                      <Trophy className="h-auto w-20" />
-                      <h4 className="text-sm font-medium">Ranking</h4>
-                    </div>
-                    <div className="text-4xl font-bold mt-2 text-center">{user.ranking}</div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Right Side: Levels */}
-              <div className="flex-1 bg-gray-100 rounded-lg p-4 flex flex-col gap-2">
-                <div className="flex items-center gap-4 mb-4">
-                  <img src={Badge_04} alt="" />
-                  <div>
-                    <h4 className="text-xl font-bold">Level 3</h4>
-                    <p className="text-sm mt-1 text-[var(--font-light2)]">Here is the level of your progress</p>
-                  </div>
-                </div>
-                <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="bg-blue-500 h-full w-75"></div> {/* 75% progress */}
-                </div>
-
-                <p className='mt-2 text-[var(--font-light2)]'>75 percent so progress in sum</p>
-              </div>
             </div>
 
 
-              {/* Learning Modes */}
-            <div className='p-6 bg-gray-100 rounded-3xl'>
-              <h1 className='font-bold text-2xl mb-6'>Learning Modes</h1>
-
-              <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-                {modes.map((mode, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col lg:flex-row  border border-gray-150 rounded-3xl p-4 bg-white hover:shadow-md transition-shadow duration-300"
-                  >
-                    {/* Top row for mobile/tablet/small screens */}
-                    <div className="flex w-full items-center justify-between mb-4 lg:hidden">
-                      <div className="flex items-center space-x-4 flex-1">
-                        <img
-                          src={mode.image}
-                          alt={`${mode.title} avatar`}
-                          className="w-16 h-16 object-contain"
-                        />
-                        <h2 className="text-lg font-bold text-[var(--font-dark)]">{mode.title}</h2>
-                      </div>
-                      <Button
-                        className="text-[var(--font-dark)] font-bold bg-[var(--cardbg)] hover:bg-[var(--cardbg)] active:bg-[var(--cardbg)] focus:bg-[var(--cardbg)] rounded-full"
-                        onClick={() => { }}
-                      >
-                        Start
-                      </Button>
+            {/* Bar Chart */}
+            {/* {isLoading ? (
+                <div className="w-full h-64 bg-white rounded-lg p-4">
+                    <Skeleton className="h-6 w-32 mb-4" />
+                    <div className="flex items-end justify-between h-40 w-full">
+                        {Array.from({ length: 7 }).map((_, index) => (
+                            <Skeleton key={index} className="w-12 h-32" style={{ height: `${Math.random() * 100 + 20}%` }} />
+                        ))}
                     </div>
-
-                    {/* Description below on mobile/tablet */}
-                    <p className="text-sm text-[var(--font-light2)] mb-4 lg:hidden text-left">
-                      {mode.description}
-                    </p>
-
-                    {/* Large screen layout */}
-                    <div className="hidden lg:flex font-sans flex-1 mb-6 lg:mb-0 lg:mr-6 flex-col">
-                      <h2 className="text-xl font-bold text-[var(--font-dark)] mb-4">{mode.title}</h2>
-                      <p className="text-sm text-[var(--font-light2)] mb-4">{mode.description}</p>
-                      <Button
-                        className="text-[var(--font-dark)] font-bold bg-[var(--cardbg)] hover:bg-[var(--cardbg)] active:bg-[var(--cardbg)] focus:bg-[var(--cardbg)] rounded-full ml-2 mt-2 lg:w-16 w-full"
-                        onClick={() => { }}
-                      >
-                        Start
-                      </Button>
-
+                    <div className="flex justify-between mt-2">
+                        {Array.from({ length: 7 }).map((_, index) => (
+                            <Skeleton key={index} className="w-12 h-4" />
+                        ))}
                     </div>
-
-                    {/* Image on large screens */}
-                    <div className="hidden lg:flex w-40 h-40 flex-shrink-0 items-center justify-center">
-                      <img
-                        src={mode.image}
-                        alt={`${mode.title} avatar`}
-                        className="w-32 h-32 object-contain"
-                      />
-                    </div>
-                  </div>
-
-
-                ))}
-              </div>
-
-            </div>
-
-
-
-          </div>
+                </div>
+            ) : (
+                <div>
+                    <BarChartComponent />
+                </div>
+            )} */}
 
         </div>
-      </div>
-    </div>
-  );
+    );
 }

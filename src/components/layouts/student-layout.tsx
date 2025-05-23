@@ -3,15 +3,20 @@ import { useNavigate } from 'react-router-dom';
 // import { useAppSelector } from '@/redux/hooks';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import learningMode from "@/assets/images/sidebar/learningMode.png"
+import learderBoard from "@/assets/images/sidebar/leaderBoard.png"
+const LearningModeIcon = () => <img src={learningMode} alt="Learning Mode" className="h-5 w-5" />;
+const LeaderboardIcon = () => <img src={learderBoard} alt="Learning Mode" className="h-5 w-5" />;
+
 import {
   LayoutDashboard,
-  BookOpen,
-  BarChart2,
+  // BookOpen,
+  // BarChart2,
   // LogOut,
   // Bell,
   Menu,
   X,
-  Brain,
+  // Brain,
   ChevronLeft,
   // Bell,
   // Settings,
@@ -88,10 +93,10 @@ export function StudentLayout({ children }: StudentLayoutProps) {
 
   const sidebarItems = [
     { path: '/student/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/student/progress', icon: BarChart2, label: 'Progress' },
-    { path: '/student/learning-modes', icon: Brain, label: 'Learning Modes' },
-    { path: '/student/leaderboard', icon: Brain, label: 'Leaderboard' },
-    { path: '/student/support', icon: BookOpen, label: 'Support' },
+    // { path: '/student/progress', icon: BarChart2, label: 'Progress' },
+    { path: '/student/learning-modes', icon: LearningModeIcon, label: 'Learning Modes' },
+    { path: '/student/leaderboard', icon: LeaderboardIcon, label: 'Leaderboard' },
+    // { path: '/student/support', icon: BookOpen, label: 'Support' },
   ];
 
   return (

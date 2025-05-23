@@ -11,8 +11,8 @@ import AboutPage from '@/pages/public/about';
 import ContactPage from '@/pages/public/contact';
 
 // Student Pages
-import StudentDashboard from '@/pages/student/dashboard';
 import LearningModes from '@/pages/student/learning-modes';
+import StudentDashboard from "@/pages/student/dashboard"
 
 // Auth Pages
 import { AuthLayout } from '@/components/layouts/auth-layout';
@@ -84,7 +84,7 @@ const AppRoutes = () => {
 
       {/* Student Routes */}
       <Route
-        path=""
+        path="/student/dashboard"
         element={
           <StudentRoute>
             <StudentLayout>

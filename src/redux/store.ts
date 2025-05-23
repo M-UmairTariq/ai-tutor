@@ -3,6 +3,7 @@ import authReducer from './slices/authSlice';
 import coursesReducer from './slices/coursesSlice';
 import topicsReducer from './slices/topicsSlice';
 import leaderBoardReducer from './slices/leaderboardSlice';
+import dashboardReducer from './slices/dashboardSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     courses: coursesReducer,
     topics: topicsReducer,
     leaderboard: leaderBoardReducer,
+    dashboard: dashboardReducer
   },
   devTools: true,
 });
