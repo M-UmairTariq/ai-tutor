@@ -231,7 +231,7 @@ export default function LanguageLearningDashboard() {
                                     {data?.completedTopics
                                         ? Object.keys(data.completedTopics).length
                                         : 0}{' '}
-                                    Topics
+                                    Modes
                                 </Badge>
                             )}
                         </div>
