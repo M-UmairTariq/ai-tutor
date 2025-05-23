@@ -354,12 +354,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
     if (msg.message.includes("Daily session limit")) {
       setSessionLimitReached(true);
       toast.error("Daily session limit reached.");
+      removeLoadingMessage();
+      return
+
     }
     if (msg.message.includes("This chat has been completed")) {
       setChatCompleted(true);
       setIsCompleteDialogOpen(true);
       toast.error("This chat has been completed.");
+      removeLoadingMessage();
+      return
     }
+    toast.error(msg.message)
     removeLoadingMessage();
   };
 
