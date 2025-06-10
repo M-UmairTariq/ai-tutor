@@ -16,8 +16,8 @@ const ChatModeTopics = () => {
   // const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const { topics, isLoading, error } = useAppSelector((state) => state.topics);
-  const { user } = useAppSelector((state) => state.auth);
+  const { topics, isLoading, error } = useAppSelector((state:any) => state.topics);
+  const { user } = useAppSelector((state:any) => state.auth);
 
   useEffect(() => {
     if (user?.id) {

@@ -26,7 +26,7 @@ export const fetchTopics = createAsyncThunk(
   'topics/fetchTopics',
   async ({ userId, topicMode }: { userId: string; topicMode: string }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post('/get-topics', {
+      const response = await apiClient.post('/topic/search', {
         userId,
         topicMode
       });
