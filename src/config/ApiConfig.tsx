@@ -12,24 +12,24 @@ const apiClient = axios.create({
 
 // Add a request interceptor for authentication
 apiClient.interceptors.request.use(
-    (config) => {
+    (config:any) => {
         const token = localStorage.getItem('token');
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
         return config;
     },
-    (error) => {
+    (error:any) => {
         return Promise.reject(error);
     }
 );
 
 // Add a response interceptor for handling common errors
 apiClient.interceptors.response.use(
-    (response) => {
+    (response: any) => {
         return response;
     },
-    (error) => {
+    (error:any) => {
         // Handle common errors like 401 Unauthorized
         if (error.response && error.response.status === 401) {
             // Clear local storage and redirect to login
