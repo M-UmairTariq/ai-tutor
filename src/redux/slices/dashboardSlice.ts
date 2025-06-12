@@ -2,8 +2,6 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import apiClient from '@/config/ApiConfig';
 import { DashboardData, DashboardState } from '@/types/dashboard';
 
-
-
 const initialState: DashboardState = {
   data: null,
   isLoading: false,
@@ -19,7 +17,13 @@ export const fetchDashboardData = createAsyncThunk(
   async (userId: string, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(`/dashboard/${userId}`);
-      return response.data as DashboardData;
+      
+      // Handle the new response structure
+      if (response.data.status && response.data.data) {
+        return response.data.data as DashboardData;
+      } else {
+        return rejectWithValue('Invalid response format');
+      }
     } catch (error: any) {
       if (error.response && error.response.data) {
         return rejectWithValue(error.response.data.message || 'Failed to fetch dashboard data');
@@ -61,7 +65,6 @@ const dashboardSlice = createSlice({
       });
   }
 });
-
 
 export const { clearDashboard, clearError } = dashboardSlice.actions;
 export default dashboardSlice.reducer;
