@@ -556,7 +556,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onShowFeedback, onTopicImage })
   const mode = searchParams.get("mode");
   const userData = JSON.parse(localStorage.getItem("AiTutorUser") || "{}");
   const userId = userData?.id;
-  const SOCKET_URL = "https://ae42-2400-adcc-107-7b00-15f2-866b-a9fa-f051.ngrok-free.app";
+  const SOCKET_URL = "https://855a-2400-adcc-107-7b00-8b7-7de6-50d-ec51.ngrok-free.app";
 
   const resetActivityTimer = useCallback(() => {
     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
