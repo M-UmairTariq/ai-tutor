@@ -213,7 +213,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const userData = JSON.parse(localStorage.getItem("AiTutorUser") || "{}");
   const userId = userData?.id;
   const SOCKET_URL =
-    "https://855a-2400-adcc-107-7b00-8b7-7de6-50d-ec51.ngrok-free.app";
+    "https://ea7c-2400-adcc-107-7b00-d73-8f16-e489-8344.ngrok-free.app";
 
   const resetActivityTimer = useCallback(() => {
     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
@@ -543,16 +543,34 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     resetActivityTimer();
   };
 
+  // const handleResetChat = () => {
+  //   logger.info("Handling chat reset.");
+  //   if (!isSocketConnected) return toast.error("Not connected.");
+  //   const payload = { userId, topicId };
+  //   logger.emitting(ChatEvents.RESET_CHAT, payload);
+  //   socketRef.current?.emit(ChatEvents.RESET_CHAT, payload);
+  //   setMessages([]);
+  //   setChatCompleted(false);
+  //   setIsCompleteDialogOpen(false);
+  //   toast.success("Chat has been reset.");
+  // };
+
   const handleResetChat = () => {
-    logger.info("Handling chat reset.");
-    if (!isSocketConnected) return toast.error("Not connected.");
+    logger.info("Handling chat reset and reconnecting socket.");
+    if (!socketRef.current) return toast.error("Socket not available.");
+  
     const payload = { userId, topicId };
     logger.emitting(ChatEvents.RESET_CHAT, payload);
-    socketRef.current?.emit(ChatEvents.RESET_CHAT, payload);
+    socketRef.current.emit(ChatEvents.RESET_CHAT, payload);
+  
     setMessages([]);
     setChatCompleted(false);
     setIsCompleteDialogOpen(false);
-    toast.success("Chat has been reset.");
+    toast.success("Chat has been reset. Reconnecting...");
+  
+    // Disconnect and reconnect the socket to start a fresh session
+    socketRef.current.disconnect();
+    socketRef.current.connect();
   };
 
   const handleStillThere = (isContinuing: boolean) => {
