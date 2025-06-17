@@ -191,6 +191,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [isInactiveDialogOpen, setIsInactiveDialogOpen] = useState(false);
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [autoplayFailed, setAutoplayFailed] = useState(false);
+
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -558,16 +560,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleResetChat = () => {
     logger.info("Handling chat reset and reconnecting socket.");
     if (!socketRef.current) return toast.error("Socket not available.");
-  
+
     const payload = { userId, topicId };
     logger.emitting(ChatEvents.RESET_CHAT, payload);
     socketRef.current.emit(ChatEvents.RESET_CHAT, payload);
-  
+
     setMessages([]);
     setChatCompleted(false);
     setIsCompleteDialogOpen(false);
     toast.success("Chat has been reset. Reconnecting...");
-  
+
     // Disconnect and reconnect the socket to start a fresh session
     socketRef.current.disconnect();
     socketRef.current.connect();
@@ -586,30 +588,70 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  // useEffect(() => {
+  //   const audioMsg = messages.find(
+  //     (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
+  //   );
+  //   if (audioMsg && audioRefs.current[audioMsg.id]) {
+  //     logger.info(
+  //       `Attempting to auto-play audio for message ID: ${audioMsg.id}`
+  //     );
+  //     audioRefs.current[audioMsg.id]
+  //       .play()
+  //       .then(() => {
+  //         logger.info(`Audio playback started for message ID: ${audioMsg.id}`);
+  //         setPlayingAudio(audioMsg.id);
+  //         setMessages((current) =>
+  //           current.map((m) =>
+  //             m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
+  //           )
+  //         );
+  //       })
+  //       .catch((e) =>
+  //         logger.error("Autoplay was prevented by the browser.", e)
+  //       );
+  //   }
+  // }, [messages]);
+
   useEffect(() => {
     const audioMsg = messages.find(
       (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
     );
-    if (audioMsg && audioRefs.current[audioMsg.id]) {
+
+    // If we've already detected a failure, don't try to autoplay anymore.
+    // Let the user control playback manually.
+    if (audioMsg && audioRefs.current[audioMsg.id] && !autoplayFailed) {
       logger.info(
         `Attempting to auto-play audio for message ID: ${audioMsg.id}`
       );
-      audioRefs.current[audioMsg.id]
-        .play()
-        .then(() => {
-          logger.info(`Audio playback started for message ID: ${audioMsg.id}`);
-          setPlayingAudio(audioMsg.id);
-          setMessages((current) =>
-            current.map((m) =>
-              m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
-            )
-          );
-        })
-        .catch((e) =>
-          logger.error("Autoplay was prevented by the browser.", e)
-        );
+
+      // .play() returns a Promise. We MUST handle its rejection.
+      const playPromise = audioRefs.current[audioMsg.id].play();
+
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            // Autoplay started successfully!
+            logger.info(`Audio playback started for message ID: ${audioMsg.id}`);
+            setPlayingAudio(audioMsg.id);
+            setMessages((current) =>
+              current.map((m) =>
+                m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
+              )
+            );
+          })
+          .catch((error) => {
+            // Autoplay was blocked by the browser!
+            logger.error("Autoplay was prevented by the browser.", error);
+            // NOW, we gracefully degrade the experience.
+            setAutoplayFailed(true);
+            toast.info("Autoplay is disabled. Tap to play audio.", {
+              duration: 5000,
+            });
+          });
+      }
     }
-  }, [messages]);
+  }, [messages, autoplayFailed]);
 
   const handleShowAssessment = (assessments: any) => {
     logger.info("Showing assessment.", { assessments });
@@ -673,11 +715,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex flex-col gap-1 ${
-              msg.type === "sent"
+            className={`flex flex-col gap-1 ${msg.type === "sent"
                 ? "self-end items-end"
                 : "self-start items-start"
-            }`}
+              }`}
           >
             {msg.loading ? (
               <div className="flex items-center gap-2 bg-white p-3 rounded-xl shadow-sm">
@@ -697,17 +738,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
             ) : (
               <div
-                className={`p-3 rounded-xl max-w-md shadow-sm ${
-                  msg.type === "sent"
+                className={`p-3 rounded-xl max-w-md shadow-sm ${msg.type === "sent"
                     ? "bg-primary text-white rounded-tr-none"
                     : "bg-white text-gray-800 rounded-tl-none"
-                }`}
+                  }`}
               >
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
                   {msg.text}
                 </p>
                 <div className="flex gap-2 items-center mt-2 flex-wrap">
-                  {msg.type === "received" && msg.audioUrl && (
+                  {/* {msg.type === "received" && msg.audioUrl && (
                     <>
                       <Button
                         variant="ghost"
@@ -726,6 +766,43 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         )}
                         <span className="text-xs">Tap to play</span>
                       </Button>
+                      <audio
+                        ref={(el) => {
+                          if (el) audioRefs.current[msg.id] = el;
+                        }}
+                        src={msg.audioUrl}
+                        onEnded={() => setPlayingAudio(null)}
+                        className="hidden"
+                        playsInline
+                      />
+                    </>
+                  )} */}
+                  {msg.type === "received" && msg.audioUrl && (
+                    <>
+                      {/* This is your new, smarter button. It's perfect. */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleAudio(msg.id)}
+                        className={`flex items-center gap-1 p-1 h-auto ${playingAudio === msg.id
+                            ? "text-primary font-semibold"
+                            : "text-gray-500"
+                          } ${autoplayFailed && !playingAudio
+                            ? "animate-pulse text-blue-600"
+                            : ""
+                          }`}
+                      >
+                        {playingAudio === msg.id ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                        <span className="text-xs">
+                          {autoplayFailed ? "Tap to Play" : "Tap to play"}
+                        </span>
+                      </Button>
+
+                      {/* You MUST add this back from your old code. */}
                       <audio
                         ref={(el) => {
                           if (el) audioRefs.current[msg.id] = el;
@@ -759,11 +836,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => toggleAudio(msg.id)}
-                        className={`flex items-center gap-1 p-1 h-auto ${
-                          playingAudio === msg.id
+                        className={`flex items-center gap-1 p-1 h-auto ${playingAudio === msg.id
                             ? "text-primary font-semibold"
                             : "text-gray-500"
-                        }`}
+                          }`}
                       >
                         {playingAudio === msg.id ? (
                           <Pause className="h-4 w-4" />
