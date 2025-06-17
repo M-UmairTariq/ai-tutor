@@ -21,6 +21,7 @@ import ChatModeTopics from '@/pages/student/topics/ChatModeTopics';
 import PhotoModeTopics from '@/pages/student/topics/PhotoModeTopics';
 import Leaderboard from '@/pages/student/Leaderboard';
 import Chat from '@/pages/student/ChatPage';
+import Rewards from '@/pages/student/Rewards';
 
 const AppRoutes = () => {
   // const { user } = useAppSelector((state) => state.auth);
@@ -93,7 +94,18 @@ const AppRoutes = () => {
           </StudentRoute>
         }
       />
-      
+
+      <Route
+        path="/student/rewards"
+        element={
+          <StudentRoute>
+            <StudentLayout>
+              <Rewards />
+            </StudentLayout>
+          </StudentRoute>
+        }
+      />
+
       <Route
         path="/student/learning-modes"
         element={
