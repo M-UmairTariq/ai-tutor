@@ -1266,6 +1266,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     const socket = io(SOCKET_URL, {
       reconnectionAttempts: 5,
       reconnectionDelay: 5000,
+      query: { userId: userId },
       extraHeaders: { "ngrok-skip-browser-warning": "true" },
     });
     socketRef.current = socket;
