@@ -132,9 +132,9 @@ const Chat: React.FC = () => {
 
 
   return (
-    <div className="flex max-h-screen ">
+    <div className="flex max-h-screen">
       <main className="flex-1 transition-all duration-300">
-        <div className="container mx-auto md:px-6">
+        <div className="mx-auto md:px-6">
           <div className="flex flex-col md:flex-row justify-between w-full gap-4 md:gap-6">
             <div className="flex-1 md:flex-grow-2 w-full md:w-auto ">
               <ChatWindow
