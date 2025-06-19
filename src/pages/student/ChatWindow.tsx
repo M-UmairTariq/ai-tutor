@@ -13,7 +13,7 @@ import {
   ArrowUp,
   X,
   LoaderPinwheel,
-  Award, // <-- IMPORTED
+  Award,
 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-// --- Centralized Logger for Detailed Console Output ---
+// --- Centralized Logger (No changes needed) ---
 const logger = {
   log: (message: string, ...optionalParams: any[]) => {
     console.log(`[${new Date().toISOString()}] ${message}`, ...optionalParams);
@@ -66,6 +66,7 @@ const logger = {
   },
 };
 
+// --- Constants and Interfaces (No changes needed) ---
 const ChatEvents = {
   RESET_CHAT: "reset_chat",
   GET_CHAT_HISTORY: "getChatHistory",
@@ -81,10 +82,8 @@ const ChatEvents = {
   SPEECH_TRANSCRIBED: "speech_transcribed",
   STREAMING_COMPLETE: "streaming_complete",
   SESSION_STATUS_UPDATE: "session_status",
-  BADGE_UNLOCKED: "badge_unlocked", // <-- ADDED
+  BADGE_UNLOCKED: "badge_unlocked",
 } as const;
-
-// ... (Interfaces remain the same)
 interface ServerToClientEvents {
   connect: () => void;
   disconnect: () => void;
@@ -119,7 +118,6 @@ interface ServerToClientEvents {
     ttsAudioUrl: string;
     [key: string]: any;
   }) => void;
-  // v-- ADDED --v
   [ChatEvents.BADGE_UNLOCKED]: (payload: {
     userId: string;
     key: string;
@@ -129,7 +127,6 @@ interface ServerToClientEvents {
     pointValue: number;
   }) => void;
 }
-
 interface ClientToServerEvents {
   [ChatEvents.RESET_CHAT]: (payload: {
     userId: string;
@@ -152,7 +149,6 @@ interface ClientToServerEvents {
   }) => void;
   [ChatEvents.SESSION_STATUS]: (payload: { userId: string }) => void;
 }
-
 interface Message {
   id: string;
   messageType: "text" | "audio" | "loading";
@@ -160,19 +156,16 @@ interface Message {
   type: "sent" | "received";
   feedback?: any;
   audioUrl?: string;
-  audioURL?: string;
   audioPlayed?: boolean;
   hasFeedback?: boolean;
   hasAssessment?: boolean;
   assessments?: any;
   loading?: boolean;
 }
-
 interface ChatWindowProps {
   onShowFeedback: (feedback: { type: string; content: any }) => void;
   onTopicImage: (imageUrl: string) => void;
 }
-
 function findLastIndex<T>(
   array: T[],
   predicate: (value: T) => boolean
@@ -182,6 +175,10 @@ function findLastIndex<T>(
   }
   return -1;
 }
+
+// A silent data URI for our audio unlock trick
+const SILENT_AUDIO_URI =
+  "data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTG93IFJhdGUgU2FtcGxlA";
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
   onShowFeedback,
@@ -195,7 +192,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [sessionTimeRemaining, setSessionTimeRemaining] = useState<
     number | null
   >(null);
-  const [sessionLimitReached, _setSessionLimitReached] = useState(false);
+  const [_sessionLimitReached, _setSessionLimitReached] = useState(false);
   const [chatCompleted, setChatCompleted] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [topicImage, setTopicImage] = useState<string | null>(null);
@@ -203,8 +200,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [autoplayFailed, setAutoplayFailed] = useState(false);
-  
-  // v-- ADDED --v
   const [unlockedBadgeInfo, setUnlockedBadgeInfo] = useState<{
     name: string;
     description: string;
@@ -213,6 +208,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   } | null>(null);
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
 
+  // State to track if the user has interacted, unlocking audio context
+  const [isAudioContextUnlocked, setIsAudioContextUnlocked] = useState(false);
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -236,6 +233,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const userId = userData?.id;
   const SOCKET_URL =
     "https://malamute-content-cougar.ngrok-free.app/";
+  
   const resetActivityTimer = useCallback(() => {
     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
     activityTimerRef.current = setTimeout(() => {
@@ -416,7 +414,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       onTopicImage(payload.attachment);
     });
     
-    // v-- ADDED --v
     socket.on(ChatEvents.BADGE_UNLOCKED, (payload) => {
       logger.receiving(ChatEvents.BADGE_UNLOCKED, payload);
       setUnlockedBadgeInfo({
@@ -440,6 +437,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(scrollToBottom, [messages]);
 
+  // Function to unlock the Audio Context on the first user tap
+  const unlockAudioContext = useCallback(() => {
+    if (isAudioContextUnlocked) return;
+    logger.info("Attempting to unlock audio context...");
+    const audio = new Audio(SILENT_AUDIO_URI);
+    audio.play()
+      .then(() => {
+        logger.info("Audio context unlocked successfully.");
+        setIsAudioContextUnlocked(true);
+      })
+      .catch(error => {
+        logger.error("Could not unlock audio context. Autoplay will likely fail.", error);
+      });
+  }, [isAudioContextUnlocked]);
+  
   const sendPlaceholder = () => {
     logger.info("Adding AI thinking placeholder to UI.");
     setMessages((prev) => [
@@ -480,10 +492,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const startRecording = async () => {
     logger.info("Attempting to start recording...");
-    if (!isSocketConnected || sessionLimitReached || chatCompleted) {
+    
+    // Unlock audio context on the first recording attempt
+    unlockAudioContext();
+    
+    if (!isSocketConnected || _sessionLimitReached || chatCompleted) {
       logger.error("Cannot start recording.", {
         isSocketConnected,
-        sessionLimitReached,
+        _sessionLimitReached,
         chatCompleted,
       });
       return;
@@ -533,12 +549,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         () => setRecordTime((t) => t + 1),
         1000
       );
-    } catch (err) {
-      logger.error(
-        "Microphone access denied or error starting recording.",
-        err
-      );
-      toast.error("Microphone access denied.");
+    } catch (err: any) {
+      // Robust error handling for microphone issues
+      logger.error("Error starting recording:", {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+      });
+      let toastMessage = "Microphone access was denied.";
+      if (err.name === "NotAllowedError") {
+        toastMessage = "Microphone permission is required. Please allow it in your browser settings.";
+      } else if (err.name === "NotFoundError") {
+        toastMessage = "No microphone was found on your device.";
+      } else {
+        toastMessage = `An error occurred with the microphone: ${err.message}`;
+      }
+      toast.error(toastMessage);
       cleanupRecording();
     }
   };
@@ -554,6 +580,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     logger.info("Form submitted.");
+
+    // Also unlock audio context on first text submission
+    unlockAudioContext();
+
     if (!message.trim() || !isSocketConnected) {
       logger.error("Cannot send message.", {
         message: message.trim(),
@@ -608,22 +638,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  // Rewritten useEffect for more reliable autoplay
   useEffect(() => {
     const audioMsg = messages.find(
       (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
     );
-    
-    if (audioMsg && audioRefs.current[audioMsg.id] && !autoplayFailed) {
+
+    // Only try to play if the audio context is unlocked and we haven't already failed
+    if (audioMsg && audioRefs.current[audioMsg.id] && isAudioContextUnlocked && !autoplayFailed) {
       logger.info(
         `Attempting to auto-play audio for message ID: ${audioMsg.id}`
       );
-
-      const playPromise = audioRefs.current[audioMsg.id].play();
+      
+      const audio = audioRefs.current[audioMsg.id];
+      audio.muted = false;
+      const playPromise = audio.play();
 
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
-            logger.info(`Audio playback started for message ID: ${audioMsg.id}`);
+            logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
             setPlayingAudio(audioMsg.id);
             setMessages((current) =>
               current.map((m) =>
@@ -633,14 +667,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           })
           .catch((error) => {
             logger.error("Autoplay was prevented by the browser.", error);
-            setAutoplayFailed(true);
-            toast.info("Autoplay is disabled. Tap to play audio.", {
+            setAutoplayFailed(true); 
+            toast.info("Autoplay is disabled. Tap a message to play audio.", {
               duration: 5000,
             });
           });
       }
     }
-  }, [messages, autoplayFailed]);
+  }, [messages, isAudioContextUnlocked, autoplayFailed]);
 
   const handleShowAssessment = (assessments: any) => {
     logger.info("Showing assessment.", { assessments });
@@ -849,7 +883,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             disabled={
               isRecording ||
               chatCompleted ||
-              sessionLimitReached ||
+              _sessionLimitReached ||
               !isSocketConnected
             }
             className="flex-1 border-none focus:ring-0 bg-transparent"
@@ -942,7 +976,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         </DialogContent>
       </Dialog>
       
-      {/* v-- ADDED --v */}
       <Dialog open={isBadgeModalOpen} onOpenChange={setIsBadgeModalOpen}>
         <DialogContent className="sm:max-w-md text-center">
           <DialogHeader>
