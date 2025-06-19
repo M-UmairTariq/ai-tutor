@@ -233,7 +233,7 @@
 // //   const userId = userData?.id;
 // //   const SOCKET_URL =
 // //     "https://malamute-content-cougar.ngrok-free.app/";
-  
+
 // //   const resetActivityTimer = useCallback(() => {
 // //     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
 // //     activityTimerRef.current = setTimeout(() => {
@@ -413,7 +413,7 @@
 // //       setTopicImage(payload.attachment);
 // //       onTopicImage(payload.attachment);
 // //     });
-    
+
 // //     socket.on(ChatEvents.BADGE_UNLOCKED, (payload) => {
 // //       logger.receiving(ChatEvents.BADGE_UNLOCKED, payload);
 // //       setUnlockedBadgeInfo({
@@ -451,7 +451,7 @@
 // //         logger.error("Could not unlock audio context. Autoplay will likely fail.", error);
 // //       });
 // //   }, [isAudioContextUnlocked]);
-  
+
 // //   const sendPlaceholder = () => {
 // //     logger.info("Adding AI thinking placeholder to UI.");
 // //     setMessages((prev) => [
@@ -492,10 +492,10 @@
 
 // //   const startRecording = async () => {
 // //     logger.info("Attempting to start recording...");
-    
+
 // //     // Unlock audio context on the first recording attempt
 // //     unlockAudioContext();
-    
+
 // //     if (!isSocketConnected || _sessionLimitReached || chatCompleted) {
 // //       logger.error("Cannot start recording.", {
 // //         isSocketConnected,
@@ -649,7 +649,7 @@
 // //       logger.info(
 // //         `Attempting to auto-play audio for message ID: ${audioMsg.id}`
 // //       );
-      
+
 // //       const audio = audioRefs.current[audioMsg.id];
 // //       audio.muted = false;
 // //       const playPromise = audio.play();
@@ -975,7 +975,7 @@
 // //           </DialogFooter>
 // //         </DialogContent>
 // //       </Dialog>
-      
+
 // //       <Dialog open={isBadgeModalOpen} onOpenChange={setIsBadgeModalOpen}>
 // //         <DialogContent className="sm:max-w-md text-center">
 // //           <DialogHeader>
@@ -1256,7 +1256,7 @@
 //   const userId = userData?.id;
 //   const SOCKET_URL =
 //     "https://malamute-content-cougar.ngrok-free.app/";
-  
+
 //   const resetActivityTimer = useCallback(() => {
 //     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
 //     activityTimerRef.current = setTimeout(() => {
@@ -1436,7 +1436,7 @@
 //       setTopicImage(payload.attachment);
 //       onTopicImage(payload.attachment);
 //     });
-    
+
 //     socket.on(ChatEvents.BADGE_UNLOCKED, (payload) => {
 //       logger.receiving(ChatEvents.BADGE_UNLOCKED, payload);
 //       setUnlockedBadgeInfo({
@@ -1473,7 +1473,7 @@
 //         logger.error("Could not unlock audio context. Autoplay will likely fail.", error);
 //       });
 //   }, [isAudioContextUnlocked]);
-  
+
 //   const sendPlaceholder = () => {
 //     logger.info("Adding AI thinking placeholder to UI.");
 //     setMessages((prev) => [
@@ -1514,9 +1514,9 @@
 
 //   const startRecording = async () => {
 //     logger.info("Attempting to start recording...");
-    
+
 //     unlockAudioContext();
-    
+
 //     if (!isSocketConnected || _sessionLimitReached || chatCompleted) {
 //       logger.error("Cannot start recording.", {
 //         isSocketConnected,
@@ -1533,7 +1533,7 @@
 //       mediaRecorderRef.current = recorder;
 //       audioChunksRef.current = [];
 //       isCanceledRef.current = false;
-      
+
 //       recorder.ondataavailable = (e) => {
 //         if (e.data.size > 0) audioChunksRef.current.push(e.data);
 //       };
@@ -1669,7 +1669,7 @@
 //       logger.info(
 //         `Attempting to auto-play audio for message ID: ${audioMsg.id}`
 //       );
-      
+
 //       const audio = audioRefs.current[audioMsg.id];
 //       audio.muted = false;
 //       const playPromise = audio.play();
@@ -1966,7 +1966,7 @@
 //           </DialogFooter>
 //         </DialogContent>
 //       </Dialog>
-      
+
 //       <Dialog open={isBadgeModalOpen} onOpenChange={setIsBadgeModalOpen}>
 //         <DialogContent className="sm:max-w-md text-center">
 //           <DialogHeader>
@@ -2246,7 +2246,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const userId = userData?.id;
   const SOCKET_URL =
     "https://malamute-content-cougar.ngrok-free.app/";
-  
+
   const resetActivityTimer = useCallback(() => {
     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
     activityTimerRef.current = setTimeout(() => {
@@ -2255,6 +2255,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       setIsInactiveDialogOpen(true);
     }, 2 * 60 * 1000);
   }, []);
+
+  const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+
+  const getSupportedAudioType = () => {
+    const isApple = isIOS();
+    // This log will help you confirm it's working
+    if (isApple) {
+      console.log("[INFO] iOS device detected. Applying optimizations.");
+    }
+    return isApple ? "audio/mp4" : "audio/webm";
+  };
+
+  const lastRecordingEndTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -2426,7 +2439,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       setTopicImage(payload.attachment);
       onTopicImage(payload.attachment);
     });
-    
+
     socket.on(ChatEvents.BADGE_UNLOCKED, (payload) => {
       logger.receiving(ChatEvents.BADGE_UNLOCKED, payload);
       setUnlockedBadgeInfo({
@@ -2463,7 +2476,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         logger.error("Could not unlock audio context. Autoplay will likely fail.", error);
       });
   }, [isAudioContextUnlocked]);
-  
+
   const sendPlaceholder = () => {
     logger.info("Adding AI thinking placeholder to UI.");
     setMessages((prev) => [
@@ -2500,95 +2513,189 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setRecordTime(0);
     streamRef.current = null;
     mediaRecorderRef.current = null;
+
+    lastRecordingEndTimeRef.current = Date.now();
   };
 
+  // const startRecording = async () => {
+  //   logger.info("Attempting to start recording...");
+
+  //   unlockAudioContext();
+
+  //   if (!isSocketConnected || _sessionLimitReached || chatCompleted) {
+  //     logger.error("Cannot start recording.", {
+  //       isSocketConnected,
+  //       _sessionLimitReached,
+  //       chatCompleted,
+  //     });
+  //     return;
+  //   }
+  //   try {
+  //     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  //     streamRef.current = stream;
+  //     const mimeType = "audio/webm";
+  //     const recorder = new MediaRecorder(stream, { mimeType });
+  //     mediaRecorderRef.current = recorder;
+  //     audioChunksRef.current = [];
+  //     isCanceledRef.current = false;
+
+  //     recorder.ondataavailable = (e) => {
+  //       if (e.data.size > 0) audioChunksRef.current.push(e.data);
+  //     };
+
+  //     recorder.onstop = async () => {
+  //       const wasCanceled = isCanceledRef.current;
+  //       cleanupRecording();
+  //       if (wasCanceled || audioChunksRef.current.length === 0) {
+  //         logger.info(`Recording stopped. Canceled: ${wasCanceled}`);
+  //         return;
+  //       }
+  //       logger.info("Recording finished. Processing audio...");
+  //       const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+  //       const audioURL = URL.createObjectURL(audioBlob);
+  //       setMessages((prev) => [
+  //         ...prev,
+  //         {
+  //           id: crypto.randomUUID(),
+  //           messageType: "audio",
+  //           audioURL,
+  //           type: "sent",
+  //         },
+  //       ]);
+  //       const audioBase64 = await blobToBase64(audioBlob);
+  //       const format = mimeType.split("/")[1];
+  //       sendPlaceholder();
+  //       const payload = { userId, chatId, audioBuffer: audioBase64, format };
+  //       logger.emitting(ChatEvents.AUDIO, payload);
+  //       socketRef.current?.emit(ChatEvents.AUDIO, payload);
+  //       resetActivityTimer();
+  //     };
+
+  //     recorder.start();
+
+  //     setIsRecording(true);
+  //     logger.info("Recording started successfully.");
+  //     recordTimerRef.current = setInterval(
+  //       () => setRecordTime((t) => t + 1),
+  //       1000
+  //     );
+
+  //   } catch (err: any) {
+  //     logger.error("Error starting recording:", {
+  //       name: err.name,
+  //       message: err.message,
+  //       stack: err.stack,
+  //     });
+  //     let toastMessage = "Microphone access was denied.";
+  //     if (err.name === "NotAllowedError") {
+  //       toastMessage = "Microphone permission is required. Please allow it in your browser settings.";
+  //     } else if (err.name === "NotFoundError") {
+  //       toastMessage = "No microphone was found on your device.";
+  //     } else {
+  //       toastMessage = `An error occurred with the microphone: ${err.message}`;
+  //     }
+  //     toast.error(toastMessage);
+  //     cleanupRecording();
+  //   }
+  // };
+
+
   const startRecording = async () => {
-    logger.info("Attempting to start recording...");
-    
+    logger.info("Start recording requested.");
     unlockAudioContext();
-    
-    if (!isSocketConnected || _sessionLimitReached || chatCompleted) {
-      logger.error("Cannot start recording.", {
-        isSocketConnected,
-        _sessionLimitReached,
-        chatCompleted,
-      });
+    if (chatCompleted || _sessionLimitReached) {
+      toast.warning("Cannot record: The chat session is complete.");
       return;
     }
+
+    // -- iOS Optimization: Enforce a cooldown between recordings --
+    if (isIOS() && lastRecordingEndTimeRef.current) {
+      const timeSinceLast = Date.now() - lastRecordingEndTimeRef.current;
+      if (timeSinceLast < 1000) {
+        logger.info(`iOS cooldown active: waiting ${1000 - timeSinceLast}ms`);
+        await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLast));
+      }
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // -- iOS Optimization: Use specific audio constraints for iOS --
+      const constraints = { audio: isIOS() ? { echoCancellation: true, noiseSuppression: true, sampleRate: 22050, channelCount: 1 } : true };
+      logger.info("Using audio constraints:", constraints);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
-      const mimeType = "audio/webm";
+
+      // -- iOS Optimization: Use the best supported MIME type --
+      const mimeType = getSupportedAudioType();
+      logger.info(`Using MIME type: ${mimeType}`);
+
       const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
       isCanceledRef.current = false;
-      
+
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
       };
 
       recorder.onstop = async () => {
         const wasCanceled = isCanceledRef.current;
         cleanupRecording();
-        if (wasCanceled || audioChunksRef.current.length === 0) {
-          logger.info(`Recording stopped. Canceled: ${wasCanceled}`);
+
+        if (wasCanceled) {
+          logger.info("Recording canceled by user.");
           return;
         }
-        logger.info("Recording finished. Processing audio...");
+        if (audioChunksRef.current.length === 0) {
+          logger.error("No audio chunks recorded.");
+          toast.error("No audio was captured. Please try again.");
+          return;
+        }
+
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        logger.info(`Final blob size: ${audioBlob.size} bytes`);
+
+        // -- iOS Optimization: Check for tiny/empty blobs --
+        if (audioBlob.size < 200) {
+          logger.error(`Recorded blob is too small.`);
+          toast.error("Recording was too short. Please try again.");
+          return;
+        }
+
         const audioURL = URL.createObjectURL(audioBlob);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            messageType: "audio",
-            audioURL,
-            type: "sent",
-          },
-        ]);
+        setMessages((prev) => [...prev, { id: crypto.randomUUID(), type: "sent", messageType: "audio", audioURL }]);
+
+        sendPlaceholder();
         const audioBase64 = await blobToBase64(audioBlob);
         const format = mimeType.split("/")[1];
-        sendPlaceholder();
         const payload = { userId, chatId, audioBuffer: audioBase64, format };
-        logger.emitting(ChatEvents.AUDIO, payload);
         socketRef.current?.emit(ChatEvents.AUDIO, payload);
         resetActivityTimer();
       };
 
       recorder.start();
-      
       setIsRecording(true);
-      logger.info("Recording started successfully.");
-      recordTimerRef.current = setInterval(
-        () => setRecordTime((t) => t + 1),
-        1000
-      );
+      recordTimerRef.current = setInterval(() => setRecordTime((t) => t + 1), 1000);
 
     } catch (err: any) {
-      logger.error("Error starting recording:", {
-        name: err.name,
-        message: err.message,
-        stack: err.stack,
-      });
-      let toastMessage = "Microphone access was denied.";
-      if (err.name === "NotAllowedError") {
-        toastMessage = "Microphone permission is required. Please allow it in your browser settings.";
-      } else if (err.name === "NotFoundError") {
-        toastMessage = "No microphone was found on your device.";
-      } else {
-        toastMessage = `An error occurred with the microphone: ${err.message}`;
-      }
-      toast.error(toastMessage);
+      logger.error("CRITICAL: Error starting recording:", { name: err.name, message: err.message });
+      toast.error(`Mic Error: ${err.name}. Please check browser permissions in settings.`);
       cleanupRecording();
     }
   };
 
-  const stopRecording = (cancel = false) => {
+  const stopRecording = async (cancel = false) => {
     logger.info(`Stopping recording. Cancel: ${cancel}`);
     isCanceledRef.current = cancel;
-    if (mediaRecorderRef.current?.state === "recording")
+    if (mediaRecorderRef.current?.state === "recording") {
+      if (!cancel && isIOS()) {
+        logger.info("iOS: Forcing requestData() before stop.");
+        mediaRecorderRef.current.requestData();
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
       mediaRecorderRef.current.stop();
+    }
     else cleanupRecording();
   };
 
@@ -2663,7 +2770,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       logger.info(
         `Attempting to auto-play audio for message ID: ${audioMsg.id}`
       );
-      
+
       const audio = audioRefs.current[audioMsg.id];
       audio.muted = false;
       const playPromise = audio.play();
@@ -2682,7 +2789,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           .catch((error) => {
             logger.error("Autoplay was prevented by the browser.", error);
             // This fallback is now correctly triggered on mobile or strict desktop browsers.
-            setAutoplayFailed(true); 
+            setAutoplayFailed(true);
             toast.info("Autoplay is disabled. Tap a message to play audio.", {
               duration: 5000,
             });
@@ -2755,8 +2862,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <div
             key={msg.id}
             className={`flex flex-col gap-1 ${msg.type === "sent"
-                ? "self-end items-end"
-                : "self-start items-start"
+              ? "self-end items-end"
+              : "self-start items-start"
               }`}
           >
             {msg.loading ? (
@@ -2778,8 +2885,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             ) : (
               <div
                 className={`p-3 rounded-xl max-w-md shadow-sm ${msg.type === "sent"
-                    ? "bg-primary text-white rounded-tr-none"
-                    : "bg-white text-gray-800 rounded-tl-none"
+                  ? "bg-primary text-white rounded-tr-none"
+                  : "bg-white text-gray-800 rounded-tl-none"
                   }`}
               >
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -2793,8 +2900,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         size="sm"
                         onClick={() => toggleAudio(msg.id)}
                         className={`flex items-center gap-1 p-1 h-auto ${playingAudio === msg.id
-                            ? "text-primary font-semibold"
-                            : "text-gray-500"
+                          ? "text-primary font-semibold"
+                          : "text-gray-500"
                           } ${autoplayFailed && !playingAudio
                             ? "animate-pulse text-blue-600"
                             : ""
@@ -2962,7 +3069,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       <Dialog open={isBadgeModalOpen} onOpenChange={setIsBadgeModalOpen}>
         <DialogContent className="sm:max-w-md text-center">
           <DialogHeader>
