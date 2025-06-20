@@ -12,7 +12,7 @@ function App() {
       <ThemeProvider defaultTheme="light" storageKey="eduplatform-theme">
         <Router>
           <AppRoutes />
-          <Toaster />
+          <Toaster position="top-right" />
         </Router>
       </ThemeProvider>
     </Provider>

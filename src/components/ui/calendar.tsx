@@ -19,8 +19,30 @@ function Calendar({
   ...props
 }: CalendarProps) {
   const [tooltipContent, setTooltipContent] = React.useState<string | null>(null);
-
   const [tooltipPosition, _setTooltipPosition] = React.useState({ top: 0, left: 0 });
+
+  // Helper function to convert UTC date string to local date
+  const convertUTCToLocalDate = (utcDateString: string): Date => {
+    const date = new Date(utcDateString);
+    
+    if (utcDateString.includes('T') && (utcDateString.includes('Z') || utcDateString.includes('+'))) {
+      // It's a full UTC datetime string - JavaScript will convert to local time automatically
+      return date;
+    } else {
+      // It's just a date string like "2025-06-17" - treat as local date
+      const parts = utcDateString.split('-');
+      return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+  };
+
+  // Helper function to compare dates (year, month, day only)
+  const isSameDate = (date1: Date, date2: Date): boolean => {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  };
 
   // Format duration in a readable format
   const formatDuration = (duration: number) => {
@@ -42,15 +64,11 @@ function Calendar({
     if (!usageRecords || usageRecords.length === 0) return false;
 
     return usageRecords.some(record => {
-      const recordDate = new Date(record.date);
-      return (
-        day.getFullYear() === recordDate.getUTCFullYear() &&
-        day.getMonth() === recordDate.getUTCMonth() &&
-        day.getDate() === recordDate.getUTCDate()
-      );
+      const localDate = convertUTCToLocalDate(record.date);
+      console.log("localDate", localDate);
+      return isSameDate(day, localDate);
     });
   }, [usageRecords]);
-
 
   // Custom modifiers for highlighting dates with usage
   const modifiers = React.useMemo(() => ({
@@ -68,24 +86,18 @@ function Calendar({
 
   // Handle day mouse enter for tooltip
   const handleDayMouseEnter = (day: Date, _activeModifiers: any) => {
-  if (!usageRecords || usageRecords.length === 0) return;
+    if (!usageRecords || usageRecords.length === 0) return;
 
-  const record = usageRecords.find(r => {
-    const recordDate = new Date(r.date);
-    return (
-      day.getFullYear() === recordDate.getUTCFullYear() &&
-      day.getMonth() === recordDate.getUTCMonth() &&
-      day.getDate() === recordDate.getUTCDate()
-    );
-  });
+    const record = usageRecords.find(r => {
+      const localDate = convertUTCToLocalDate(r.date);
+      return isSameDate(day, localDate);
+    });
 
-  if (record) {
-    const formattedDuration = formatDuration(record.duration);
-    setTooltipContent(`Usage: ${formattedDuration}`);
-  }
-};
-
-
+    if (record) {
+      const formattedDuration = formatDuration(record.duration);
+      setTooltipContent(`Usage: ${formattedDuration}`);
+    }
+  };
 
   // Handle day mouse leave to hide tooltip
   const handleDayMouseLeave = () => {

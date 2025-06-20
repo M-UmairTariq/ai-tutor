@@ -26,6 +26,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import QuestionnaireModal from "@/components/ui/QuestionaireModal";
+// import { set } from "date-fns";
+
+export interface McqAnswer {
+  questionId: string;
+  answerIndex: number;
+}
 
 // --- Centralized Logger ---
 const logger = {
@@ -82,7 +89,9 @@ const ChatEvents = {
   SPEECH_TRANSCRIBED: "speech_transcribed",
   STREAMING_COMPLETE: "streaming_complete",
   SESSION_STATUS_UPDATE: "session_status",
-  BADGE_UNLOCKED: "badge_unlocked",
+  BADGE_UNLOCKED: "badge_unlocked", // <-- ADDED
+  MCQ_LIST: "mcq_list",
+  SUBMIT_MCQS: "submit_mcqs",
 } as const;
 
 interface ServerToClientEvents {
@@ -150,6 +159,7 @@ interface ClientToServerEvents {
     textMessage: string;
   }) => void;
   [ChatEvents.SESSION_STATUS]: (payload: { userId: string }) => void;
+  [ChatEvents.SUBMIT_MCQS]: (payload: McqAnswer[]) => void;
 }
 
 interface Message {
@@ -205,6 +215,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [autoplayFailed, setAutoplayFailed] = useState(false);
+  const [isQueationnaireOpen, setIsQuestionnaireOpen] = React.useState(false);
+  const [mcqList, setMcqList] = useState<any[]>([]);
+
+
+
+  // v-- ADDED --v
   const [unlockedBadgeInfo, setUnlockedBadgeInfo] = useState<{
     name: string;
     description: string;
@@ -327,8 +343,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       setMessages(formatted);
       setChatId(newChatId);
       if (chatHistory.some((m: any) => m.isCompleted)) {
-        setChatCompleted(true);
-        setIsCompleteDialogOpen(true);
+        if (mode !== "reading-mode") {
+          setChatCompleted(true);
+          setIsCompleteDialogOpen(true);
+        }
       }
     });
 
@@ -420,6 +438,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       logger.receiving(ChatEvents.SESSION_STATUS_UPDATE, payload);
       setSessionTimeRemaining(payload.remainingSeconds);
     });
+
+    socket.on(ChatEvents.MCQ_LIST, (payload) => {
+      logger.receiving(ChatEvents.MCQ_LIST, payload);
+      console.log("Received MCQ List:", payload);
+      if (mode === "reading-mode") {
+        setMcqList(payload.questions);
+        setIsQuestionnaireOpen(true);
+      }
+    });
+
     socket.on(ChatEvents.ERROR, (payload) => {
       logger.receiving(ChatEvents.ERROR, payload);
       toast.error(payload.message);
@@ -436,6 +464,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       onTopicImage(payload.attachment);
     });
 
+    // v-- ADDED --v
     socket.on(ChatEvents.BADGE_UNLOCKED, (payload) => {
       logger.receiving(ChatEvents.BADGE_UNLOCKED, payload);
       setUnlockedBadgeInfo({
@@ -631,6 +660,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  // In your component where you handle the questionnaire submission
+  const handleQuestionnaireSubmit = (answers: { [questionId: string]: number }) => {
+    // Transform the answers object to McqAnswer array format
+    const mcqAnswers: McqAnswer[] = Object.entries(answers).map(([questionId, answerIndex]) => ({
+      questionId,
+      answerIndex
+    }));
+
+    socketRef?.current?.emit(ChatEvents.SUBMIT_MCQS, mcqAnswers);
+
+    // Optional: Close modal or show success message
+    console.log('Questionnaire submitted:', mcqAnswers);
+  };
+
   const stopRecording = async (cancel = false) => {
     logger.info(`Stopping recording. Cancel: ${cancel}`);
     isCanceledRef.current = cancel;
@@ -794,7 +837,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <ChevronLeft className="h-5 w-5" />
         </Button>
         <h2 className="text-lg font-semibold">
-          {mode === "photo-mode" ? "Photo Mode" : "Chat Mode"}
+          {mode === "photo-mode"
+            ? "Photo Mode"
+            : mode === "reading-mode"
+              ? "Reading Mode"
+              : mode === "roleplay-mode"
+                ? "Roleplay Mode"
+                : "Chat Mode"}
         </h2>
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <Clock className="h-4 w-4" />
@@ -806,11 +855,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       <div className="md:hidden">
         {mode === "photo-mode" && topicImage && (
-          <div className="p-4 bg-black">
+          <div className="p-4">
             <img
               src={topicImage}
               alt="Topic context"
-              className="w-full rounded-lg object-contain max-h-48"
+              className="w-full rounded-lg object-top object-cover max-h-48"
             />
           </div>
         )}
@@ -906,6 +955,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                       <MessageCircle className="h-4 w-4" />
                       View Feedback
                     </Button>
+                  )}
+                  {msg.type === "sent" && msg.audioUrl && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleAudio(msg.id)}
+                        className={`flex items-center gap-1 p-1 h-auto ${playingAudio === msg.id
+                          ? "text-primary font-semibold"
+                          : "text-gray-500"
+                          }`}
+                      >
+                        {playingAudio === msg.id ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                        <span className="text-xs">Tap to play</span>
+                      </Button>
+                      <audio
+                        ref={(el) => {
+                          if (el) audioRefs.current[msg.id] = el;
+                        }}
+                        src={msg.audioUrl}
+                        onEnded={() => setPlayingAudio(null)}
+                        className="hidden"
+                        playsInline
+                      />
+                    </>
                   )}
                   {msg.type === "sent" && msg.hasAssessment && (
                     <Button
@@ -1033,6 +1111,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         </DialogContent>
       </Dialog>
 
+      {/* v-- ADDED --v */}
       <Dialog open={isBadgeModalOpen} onOpenChange={setIsBadgeModalOpen}>
         <DialogContent className="sm:max-w-md text-center">
           <DialogHeader>
@@ -1069,6 +1148,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
+      <QuestionnaireModal
+        open={isQueationnaireOpen}
+        onClose={() => setIsQuestionnaireOpen(false)}
+        onSubmit={handleQuestionnaireSubmit}
+        mcqs={mcqList}
+      />
     </div>
   );
 };

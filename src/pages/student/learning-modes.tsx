@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import chatModeAvatar from "@/assets/svgs/chatModeAvatar.svg";
 import photoModeAvatar from "@/assets/svgs/photoModeAvatar.svg";
+import debateModeAvatar from "@/assets/svgs/debateModeAvatar.svg";
+import roleplayModeAvatar from "@/assets/svgs/roleplayModeAvatar.svg";
+// import QuestionnaireModal from "@/components/ui/QuestionaireModal";
 
 const modes = [
   {
@@ -17,10 +20,24 @@ const modes = [
     image: photoModeAvatar,
     route: "/student/learning-modes/photo-mode",
   },
+  {
+    title: "Reading Mode",
+    description: "Let's break down images and get instant feedback from AI.",
+    image: debateModeAvatar,
+    route: "/student/learning-modes/reading-mode",
+  },
+  {
+    title: "Role Play Mode",
+    description: "Let's break down images and get instant feedback from AI.",
+    image: roleplayModeAvatar,
+    route: "/student/learning-modes/roleplay-mode",
+  },
 ];
 
 const LearningModes: React.FC = () => {
   const navigate = useNavigate();
+
+  // const [isQueationnaireOpen, setIsQuestionnaireOpen] = React.useState(true);
 
   const handleStartButton = (route: string) => {
     console.log("Start button clicked");
@@ -84,6 +101,11 @@ const LearningModes: React.FC = () => {
 
         ))}
       </div>
+
+      {/* <QuestionnaireModal
+        open={isQueationnaireOpen}
+        onClose={() => setIsQuestionnaireOpen(false)}
+      /> */}
     </div>
   );
 };
