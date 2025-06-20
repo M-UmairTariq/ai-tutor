@@ -574,11 +574,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       logger.info("Component unmounting. Disconnecting socket.");
       if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
       socket.disconnect();
-      // --- MODIFIED: Cleanup Howler resources
       if (soundRef.current) {
         soundRef.current.unload();
       }
-      // --- END MODIFICATION
     };
   }, [userId, topicId, navigate, resetActivityTimer, onTopicImage]);
 
@@ -1126,4 +1124,4 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   );
 };
 
-export default ChatWindow;
+export default React.memo(ChatWindow);
