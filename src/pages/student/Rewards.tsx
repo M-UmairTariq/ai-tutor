@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Trophy,
   Lock,
@@ -30,6 +30,7 @@ interface Achievement {
   rewardClaimed: boolean;
   awardedAt?: string; // ISO date string
   iconUrl?: string; // The URL for the achievement's icon
+  threshold?: number;
 }
 
 // Describes the categorized data structure from the achievements API
@@ -38,6 +39,18 @@ interface AchievementCategory {
   earned: Achievement[];
   available: Achievement[];
 }
+
+interface UserStats {
+  userId: string;
+  totalLoginDays: number;
+  currentStreak: number;
+  lastLoginDate: string;
+  totalUsageSec: number;
+  totalTopicsDone: number;
+  totalPoints: number;
+  updatedAt: string;
+}
+
 
 // --- Component Props ---
 
@@ -50,6 +63,7 @@ interface LevelCardProps {
 interface AchievementCardProps {
   achievement: Achievement;
   isEarned: boolean;
+  userStats: UserStats | null;
 }
 
 // --- Main Rewards Component ---
@@ -59,6 +73,7 @@ const Rewards = (): JSX.Element => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [totalPoints, setTotalPoints] = useState<number>(0);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [claimingReward, setClaimingReward] = useState<string | null>(null);
 
   // Static data defining the level structure
@@ -136,23 +151,19 @@ const Rewards = (): JSX.Element => {
       }
       const response = await apiClient.get<{
         status: string;
-        data: AchievementCategory[];
+        data: { achievements: AchievementCategory[]; userStats: UserStats };
       }>(`/users/${userId}/achievements`);
+
+      console.log("Achievements response:", response.data);
+
       if (response.data.status === "success") {
-        setAchievements(response.data.data);
-        const earnedPoints = response.data.data.reduce((total, category) => {
-          return (
-            total +
-            category.earned.reduce(
-              (catTotal, ach) => catTotal + ach.pointValue,
-              0
-            )
-          );
-        }, 0);
-        setTotalPoints(earnedPoints);
+        const { achievements, userStats } = response.data.data;
+        setAchievements(achievements);
+        setUserStats(userStats);
       } else {
         setError("Failed to load achievements");
       }
+      
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
@@ -242,6 +253,41 @@ const Rewards = (): JSX.Element => {
     isEarned,
   }: AchievementCardProps): JSX.Element => {
     const canClaim = isEarned && !achievement.rewardClaimed;
+    const nameRef = useRef<HTMLHeadingElement>(null);
+    const descRef = useRef<HTMLParagraphElement>(null);
+    const [nameLines, setNameLines] = useState(1);
+    const [descLines, setDescLines] = useState(1);
+
+    useEffect(() => {
+      const getLineCount = (el: HTMLElement | null): number => {
+        if (!el) return 1;
+        const lineHeight = parseFloat(getComputedStyle(el).lineHeight || "16");
+        return Math.round(el.scrollHeight / lineHeight);
+      };
+      setNameLines(getLineCount(nameRef.current));
+      setDescLines(getLineCount(descRef.current));
+    }, [achievement.name, achievement.description]);
+
+    const getProgressValue = (): number | null => {
+      if (!userStats || achievement.threshold == null) return null;
+
+      if (achievement.key.startsWith("usage_")) {
+        return userStats.totalUsageSec;
+      }
+      if (achievement.key.startsWith("topics_")) {
+        return userStats.totalTopicsDone;
+      }
+      if (achievement.key.startsWith("streak_")) {
+        return userStats.currentStreak;
+      }
+      return null;
+    };
+
+    const rawValue = getProgressValue();
+    const percent =
+      rawValue != null
+        ? Math.min(Math.round((rawValue / achievement.threshold!) * 100), 100)
+        : 0;
 
     return (
       <div
@@ -275,19 +321,36 @@ const Rewards = (): JSX.Element => {
 
         <div className="flex-1 text-center">
           <h4
-            className={`font-semibold text-sm mb-1 ${
-              isEarned ? "text-gray-800" : "text-gray-600"
-            }`}
+            ref={nameRef}
+            className={`font-semibold text-sm ${
+              nameLines > 1 || descLines > 1 ? "mb-1" : "mb-6"
+            } ${isEarned ? "text-gray-800" : "text-gray-600"}`}
           >
             {achievement.name}
           </h4>
           <p
-            className={`text-xs mb-2 ${
-              isEarned ? "text-gray-600" : "text-gray-500"
-            }`}
+            ref={descRef}
+            className={`text-xs ${
+              descLines >= 3 ? "mb-2" : descLines === 2 ? "mb-6" : "mb-6"
+            } ${isEarned ? "text-gray-600" : "text-gray-500"}`}
           >
             {achievement.description}
           </p>
+
+          {rawValue != null && achievement.threshold != null && !isEarned && (
+            <div className="mb-2">
+              <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-blue-700 to-blue-500 h-full transition-all duration-500"
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-500 text-right mt-1">
+                {percent}%
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-center gap-2 flex-wrap">
             <span
               className={`text-xs font-medium px-2 py-1 rounded-full ${
@@ -313,7 +376,7 @@ const Rewards = (): JSX.Element => {
             <button
               onClick={() => claimReward(achievement.key)}
               disabled={claimingReward === achievement.key}
-              className="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 px-4 rounded-full text-xs font-medium transition-colors flex items-center justify-center gap-2 shadow-md w-32 h-10 drop-shadow-sm"
+              className="absolute z-2 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 px-4 rounded-full text-xs font-medium transition-colors flex items-center justify-center gap-2 shadow-md w-32 h-10 drop-shadow-sm"
             >
               {claimingReward === achievement.key ? (
                 <>
@@ -430,6 +493,7 @@ const Rewards = (): JSX.Element => {
                       key={achievement.id}
                       achievement={achievement}
                       isEarned={true}
+                      userStats={userStats}
                     />
                   ))}
                   {category.available.map((achievement) => (
@@ -437,6 +501,7 @@ const Rewards = (): JSX.Element => {
                       key={achievement.id}
                       achievement={achievement}
                       isEarned={false}
+                      userStats={userStats}
                     />
                   ))}
                 </div>
