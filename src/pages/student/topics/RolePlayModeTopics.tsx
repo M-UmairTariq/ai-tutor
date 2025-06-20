@@ -30,7 +30,7 @@ const RolePlayModeTopics = () => {
   }, [error]);
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="mx-auto px-4 py-6">
       {/* <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
           <Button 
@@ -89,7 +89,7 @@ const RolePlayModeTopics = () => {
                 </CardContent>
                   
                   <CardFooter className='flex justify-end'>
-                    <Link to={`/student/learning-mode/${topic?.id}/${topic?.topicName}?mode=photo-mode`} >
+                    <Link to={`/student/learning-mode/${topic?.id}/${topic?.topicName}?mode=roleplay-mode`} >
 
                     <Button
                       size="sm"

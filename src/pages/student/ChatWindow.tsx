@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
+import { Howl, Howler } from "howler";
 import {
   Mic,
   Send,
@@ -27,14 +28,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import QuestionnaireModal from "@/components/ui/QuestionaireModal";
-// import { set } from "date-fns";
 
 export interface McqAnswer {
   questionId: string;
   answerIndex: number;
 }
 
-// --- Centralized Logger ---
+// --- Centralized Logger (Unchanged) ---
 const logger = {
   log: (message: string, ...optionalParams: any[]) => {
     console.log(`[${new Date().toISOString()}] ${message}`, ...optionalParams);
@@ -73,7 +73,7 @@ const logger = {
   },
 };
 
-// --- Constants and Interfaces ---
+// --- Constants and Interfaces (Unchanged) ---
 const ChatEvents = {
   RESET_CHAT: "reset_chat",
   GET_CHAT_HISTORY: "getChatHistory",
@@ -89,11 +89,10 @@ const ChatEvents = {
   SPEECH_TRANSCRIBED: "speech_transcribed",
   STREAMING_COMPLETE: "streaming_complete",
   SESSION_STATUS_UPDATE: "session_status",
-  BADGE_UNLOCKED: "badge_unlocked", // <-- ADDED
+  BADGE_UNLOCKED: "badge_unlocked",
   MCQ_LIST: "mcq_list",
   SUBMIT_MCQS: "submit_mcqs",
   MCQ_RESULT: "mcq_result",
-
 } as const;
 
 interface ServerToClientEvents {
@@ -161,8 +160,10 @@ interface ClientToServerEvents {
     textMessage: string;
   }) => void;
   [ChatEvents.SESSION_STATUS]: (payload: { userId: string }) => void;
-  [ChatEvents.SUBMIT_MCQS]: (
-    payload: { chatId: string; answers: McqAnswer[] }) => void
+  [ChatEvents.SUBMIT_MCQS]: (payload: {
+    chatId: string;
+    answers: McqAnswer[];
+  }) => void;
 }
 
 interface Message {
@@ -195,9 +196,6 @@ function findLastIndex<T>(
   return -1;
 }
 
-const SILENT_AUDIO_URI =
-  "data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTG93IFJhdGUgU2FtcGxlA";
-
 const ChatWindow: React.FC<ChatWindowProps> = ({
   onShowFeedback,
   onTopicImage,
@@ -212,18 +210,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   >(null);
   const [_sessionLimitReached, _setSessionLimitReached] = useState(false);
   const [chatCompleted, setChatCompleted] = useState(false);
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+
+  // --- MODIFIED: Simplified audio state management
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const soundRef = useRef<Howl | null>(null);
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
+  const [autoplayFailed, setAutoplayFailed] = useState(false);
+  // --- END MODIFICATION
+
   const [topicImage, setTopicImage] = useState<string | null>(null);
   const [isInactiveDialogOpen, setIsInactiveDialogOpen] = useState(false);
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
-  const [autoplayFailed, setAutoplayFailed] = useState(false);
   const [isQueationnaireOpen, setIsQuestionnaireOpen] = React.useState(false);
   const [mcqList, setMcqList] = useState<any[]>([]);
 
-
-
-  // v-- ADDED --v
   const [unlockedBadgeInfo, setUnlockedBadgeInfo] = useState<{
     name: string;
     description: string;
@@ -231,7 +232,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     pointValue: number;
   } | null>(null);
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
-  const [isAudioContextUnlocked, setIsAudioContextUnlocked] = useState(false);
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -240,7 +240,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const activityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const isCanceledRef = useRef(false);
@@ -253,8 +252,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const mode = searchParams.get("mode");
   const userData = JSON.parse(localStorage.getItem("AiTutorUser") || "{}");
   const userId = userData?.id;
-  const SOCKET_URL =
-    "https://malamute-content-cougar.ngrok-free.app/";
+  const SOCKET_URL = "https://malamute-content-cougar.ngrok-free.app/";
 
   const resetActivityTimer = useCallback(() => {
     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
@@ -265,7 +263,82 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }, 2 * 60 * 1000);
   }, []);
 
-  const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+  const isIOS = () =>
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) ||
+    (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+
+  // --- MODIFIED: Universal Audio Unlocker ---
+  // This function sets up a one-time event listener to unlock audio on the first user interaction.
+  // const unlockAudio = useCallback(() => {
+  //   if (isAudioUnlocked) return;
+
+  //   const unlock = () => {
+  //     Howler.ctx.resume().then(() => {
+  //       logger.info("Audio context unlocked successfully by user gesture.");
+  //       setIsAudioUnlocked(true);
+  //       document.removeEventListener("touchstart", unlock, true);
+  //       document.removeEventListener("touchend", unlock, true);
+  //       document.removeEventListener("click", unlock, true);
+  //     });
+  //   };
+
+  //   logger.info("Setting up audio unlock listeners...");
+  //   document.addEventListener("touchstart", unlock, true);
+  //   document.addEventListener("touchend", unlock, true);
+  //   document.addEventListener("click", unlock, true);
+
+  //   // Cleanup function to remove listeners if the component unmounts
+  //   return () => {
+  //     document.removeEventListener("touchstart", unlock, true);
+  //     document.removeEventListener("touchend", unlock, true);
+  //     document.removeEventListener("click", unlock, true);
+  //   };
+  // }, [isAudioUnlocked]);
+  // --- CORRECTED: Universal Audio Unlocker ---
+  const unlockAudio = useCallback(() => {
+    if (isAudioUnlocked) return;
+
+    const unlock = () => {
+      // --- THE FIX IS HERE ---
+      // First, check if the Howler context exists and if it's not already running.
+      // This prevents the "Cannot read properties of null" error.
+      if (Howler.ctx && Howler.ctx.state !== "running") {
+        Howler.ctx.resume().then(() => {
+          logger.info("Audio context unlocked successfully by user gesture.");
+          setIsAudioUnlocked(true);
+          // It's crucial to remove the listeners after a successful unlock.
+          document.removeEventListener("touchstart", unlock, true);
+          document.removeEventListener("touchend", unlock, true);
+          document.removeEventListener("click", unlock, true);
+        });
+      } else {
+        // If the context doesn't exist yet or is already running, we don't need to do anything.
+        // We can consider the audio "unlocked" for our app's logic and clean up the listeners.
+        setIsAudioUnlocked(true);
+        document.removeEventListener("touchstart", unlock, true);
+        document.removeEventListener("touchend", unlock, true);
+        document.removeEventListener("click", unlock, true);
+      }
+    };
+
+    logger.info("Setting up audio unlock listeners...");
+    document.addEventListener("touchstart", unlock, true);
+    document.addEventListener("touchend", unlock, true);
+    document.addEventListener("click", unlock, true);
+
+    // Cleanup function to remove listeners if the component unmounts before unlock
+    return () => {
+      document.removeEventListener("touchstart", unlock, true);
+      document.removeEventListener("touchend", unlock, true);
+      document.removeEventListener("click", unlock, true);
+    };
+  }, [isAudioUnlocked]);
+
+  useEffect(() => {
+    unlockAudio();
+  }, [unlockAudio]);
+  // --- END MODIFICATION
 
   const getSupportedMimeType = () => {
     const types = [
@@ -275,9 +348,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       "audio/ogg",
     ];
     for (const type of types) {
-      if (MediaRecorder.isTypeSupported(type)) {
-        return type;
-      }
+      if (MediaRecorder.isTypeSupported(type)) return type;
     }
     return undefined;
   };
@@ -285,6 +356,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const lastRecordingEndTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // This entire useEffect for socket connection remains largely the same
     if (!userId) {
       toast.error("User information is missing.");
       logger.error("User ID is missing, cannot establish connection.");
@@ -316,11 +388,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       resetActivityTimer();
     });
+    // ... all your other socket.on listeners remain unchanged ...
+    // In your main useEffect for the socket...
 
-    socket.on("disconnect", () => {
-      logger.info("Socket disconnected.");
+    socket.on("disconnect", (reason: Socket.DisconnectReason) => {
+      logger.error(`Socket disconnected. Reason: ${reason}`);
       setIsSocketConnected(false);
-      if (!isInactiveDialogOpen) toast.warning("Connection lost...");
+
+      // Case 1: An unexpected network issue occurred.
+      // This is the ONLY case where we should show a "Connection lost" warning.
+      if (reason === "ping timeout" || reason === "transport close") {
+        if (!isInactiveDialogOpen) {
+          toast.warning("Connection lost. Trying to reconnect...");
+        }
+      }
+      // Case 2: The server deliberately disconnected the client.
+      else if (reason === "io server disconnect") {
+        toast.error("You have been disconnected by the server.");
+      }
+      // Case 3: Your own code called socket.disconnect().
+      // This is intentional, so we show NO toast. It would just be noise.
+      else if (reason === "io client disconnect") {
+        logger.info("Client-side disconnection initiated. No toast needed.");
+      }
     });
 
     socket.on("connect_error", (err) => {
@@ -455,16 +545,36 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     socket.on(ChatEvents.MCQ_RESULT, (payload) => {
       logger.receiving(ChatEvents.MCQ_RESULT, payload);
       console.log("Received MCQ RESULT:", payload);
-      // if (mode === "reading-mode") {
-      //   setMcqList(payload.questions);
-      //   setChatId(payload.chatId);
-      //   setIsQuestionnaireOpen(true);
-      // }
     });
 
     socket.on(ChatEvents.ERROR, (payload) => {
       logger.receiving(ChatEvents.ERROR, payload);
-      toast.error(payload.message);
+      removeLoadingMessage();
+
+      const errorMessage = (payload.message || "").toLowerCase();
+
+      // Check for specific, user-facing error messages from the server
+      if (errorMessage.includes("session limit reached")) {
+        _setSessionLimitReached(true);
+        toast.error("You have reached your daily session limit.");
+      } else if (errorMessage.includes("user not found")) {
+        toast.error("User authentication failed. Please log in again.");
+        // Optional: Redirect to login after a few seconds
+        setTimeout(() => navigate("/login"), 3000);
+      } else if (errorMessage.includes("chat has been completed")) {
+        setChatCompleted(true);
+        // We can show a toast or let the banner (added below) handle the UI update.
+        toast.info("This conversation has already ended.");
+      } else {
+        // Fallback for any other server-side issue
+        toast.error(
+          "An internal server error occurred. Please try again later."
+        );
+        logger.error(
+          "Unhandled Internal Server Error:",
+          payload.error || payload
+        );
+      }
     });
     socket.on(ChatEvents.CHAT_COMPLETED, (payload) => {
       logger.receiving(ChatEvents.CHAT_COMPLETED, payload);
@@ -478,7 +588,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       onTopicImage(payload.attachment);
     });
 
-    // v-- ADDED --v
     socket.on(ChatEvents.BADGE_UNLOCKED, (payload) => {
       logger.receiving(ChatEvents.BADGE_UNLOCKED, payload);
       setUnlockedBadgeInfo({
@@ -495,31 +604,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       logger.info("Component unmounting. Disconnecting socket.");
       if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
       socket.disconnect();
+      if (soundRef.current) {
+        soundRef.current.unload();
+      }
     };
   }, [userId, topicId, navigate, resetActivityTimer, onTopicImage]);
 
   const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(scrollToBottom, [messages]);
-
-  const unlockAudioContext = useCallback(() => {
-    if (isAudioContextUnlocked || (window as any).isAudioContextUnlocked) return;
-    logger.info("Attempting to unlock audio context...");
-    const audio = new Audio(SILENT_AUDIO_URI);
-    audio
-      .play()
-      .then(() => {
-        logger.info("Audio context unlocked successfully globally.");
-        setIsAudioContextUnlocked(true);
-        (window as any).isAudioContextUnlocked = true;
-      })
-      .catch((error) => {
-        logger.error(
-          "Could not unlock audio context. Autoplay will likely fail.",
-          error
-        );
-      });
-  }, [isAudioContextUnlocked]);
 
   const sendPlaceholder = () => {
     logger.info("Adding AI thinking placeholder to UI.");
@@ -557,13 +650,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setRecordTime(0);
     streamRef.current = null;
     mediaRecorderRef.current = null;
-
     lastRecordingEndTimeRef.current = Date.now();
   };
 
   const startRecording = async () => {
     logger.info("Start recording requested.");
-    unlockAudioContext();
     if (chatCompleted || _sessionLimitReached) {
       toast.warning("Cannot record: The chat session is complete.");
       return;
@@ -654,51 +745,56 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       recorder.start();
       setIsRecording(true);
-      recordTimerRef.current = setInterval(() => setRecordTime((t) => t + 1), 1000);
-
+      recordTimerRef.current = setInterval(
+        () => setRecordTime((t) => t + 1),
+        1000
+      );
     } catch (err: any) {
       logger.error("CRITICAL: Error starting recording:", {
         name: err.name,
         message: err.message,
       });
       let errorMessage = "An unknown microphone error occurred.";
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        errorMessage = "Microphone access denied. Please enable it in your browser settings.";
-      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-        errorMessage = "No microphone found. Please connect a microphone and try again.";
-      } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
-        errorMessage = "Your microphone is already in use by another application.";
+      if (
+        err.name === "NotAllowedError" ||
+        err.name === "PermissionDeniedError"
+      ) {
+        errorMessage =
+          "Microphone access denied. Please enable it in your browser settings.";
+      } else if (
+        err.name === "NotFoundError" ||
+        err.name === "DevicesNotFoundError"
+      ) {
+        errorMessage =
+          "No microphone found. Please connect a microphone and try again.";
+      } else if (
+        err.name === "NotReadableError" ||
+        err.name === "TrackStartError"
+      ) {
+        errorMessage =
+          "Your microphone is already in use by another application.";
       }
       toast.error(errorMessage);
       cleanupRecording();
     }
   };
 
-  // In your component where you handle the questionnaire submission
-  // Fixed handleQuestionnaireSubmit function
-  const handleQuestionnaireSubmit = (answers: { [questionId: string]: number }) => {
-    // Transform the answers object to McqAnswer array format
-    const mcqAnswers: McqAnswer[] = Object.entries(answers).map(([questionId, answerIndex]) => ({
-      questionId,
-      answerIndex
-    }));
-
+  const handleQuestionnaireSubmit = (answers: {
+    [questionId: string]: number;
+  }) => {
+    const mcqAnswers: McqAnswer[] = Object.entries(answers).map(
+      ([questionId, answerIndex]) => ({
+        questionId,
+        answerIndex,
+      })
+    );
     if (!chatId) {
       console.log("Chat ID is not available. Cannot submit MCQs.");
       return;
     }
-
-    const payload = {
-      chatId,
-      answers: mcqAnswers
-    };
-
-    // console.log("Submitting MCQs:", payload);
-
+    const payload = { chatId, answers: mcqAnswers };
     logger.emitting(ChatEvents.SUBMIT_MCQS, payload);
-
     socketRef.current?.emit(ChatEvents.SUBMIT_MCQS, payload);
-
   };
 
   const stopRecording = async (cancel = false) => {
@@ -708,18 +804,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       if (!cancel && isIOS()) {
         logger.info("iOS: Forcing requestData() before stop.");
         mediaRecorderRef.current.requestData();
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
       mediaRecorderRef.current.stop();
-    }
-    else cleanupRecording();
+    } else cleanupRecording();
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     logger.info("Form submitted.");
-
-    unlockAudioContext();
 
     if (!message.trim() || !isSocketConnected) {
       logger.error("Cannot send message.", {
@@ -745,6 +838,82 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     resetActivityTimer();
   };
 
+  // --- MODIFIED: Autoplay logic using Howler ---
+  useEffect(() => {
+    const audioMsg = messages.find(
+      (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
+    );
+
+    if (audioMsg && audioMsg.audioUrl && isAudioUnlocked && !autoplayFailed) {
+      logger.info(
+        `Attempting to auto-play audio for message ID: ${audioMsg.id}`
+      );
+
+      // Stop any currently playing sound
+      if (soundRef.current) {
+        soundRef.current.stop();
+      }
+
+      const sound = new Howl({
+        src: [audioMsg.audioUrl],
+        html5: true,
+        autoplay: true,
+        onplay: () => {
+          logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
+          setPlayingAudioId(audioMsg.id);
+          setMessages((current) =>
+            current.map((m) =>
+              m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
+            )
+          );
+        },
+        onplayerror: () => {
+          logger.error(`Autoplay failed for message ID: ${audioMsg.id}`);
+          setAutoplayFailed(true);
+          sound.unload();
+          toast.info("Autoplay is disabled. Tap a message to play audio.", {
+            duration: 5000,
+          });
+        },
+        onend: () => {
+          setPlayingAudioId(null);
+        },
+      });
+      soundRef.current = sound;
+    }
+  }, [messages, isAudioUnlocked, autoplayFailed]);
+  // --- END MODIFICATION
+
+  // --- MODIFIED: Audio toggle logic using Howler ---
+  const toggleAudio = (id: string, audioUrl: string | undefined) => {
+    if (!audioUrl) return;
+
+    // If this sound is already playing, stop it
+    if (playingAudioId === id && soundRef.current) {
+      soundRef.current.stop();
+      setPlayingAudioId(null);
+      return;
+    }
+
+    // Stop any other sound that might be playing
+    if (soundRef.current) {
+      soundRef.current.stop();
+    }
+
+    // Create and play the new sound
+    const sound = new Howl({
+      src: [audioUrl],
+      html5: true,
+      onplay: () => setPlayingAudioId(id),
+      onend: () => setPlayingAudioId(null),
+    });
+
+    sound.play();
+    soundRef.current = sound;
+  };
+  // --- END MODIFICATION
+
+  // All other handlers like handleResetChat, handleStillThere, handleShowAssessment remain the same
   const handleResetChat = () => {
     logger.info("Handling chat reset and reconnecting socket.");
     if (!socketRef.current) return toast.error("Socket not available.");
@@ -753,22 +922,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     logger.emitting(ChatEvents.RESET_CHAT, payload);
     socketRef.current.emit(ChatEvents.RESET_CHAT, payload);
 
-
-    // Clear local state immediately for a responsive UI.
-    // This makes the app feel faster.
     setMessages([]);
     setChatCompleted(false);
     setIsCompleteDialogOpen(false);
-    setPlayingAudio(null);
+    setPlayingAudioId(null); // MODIFIED
     toast.info("Resetting chat session...");
 
-    // 1. Tell the server to RESET the chat for this user and topic.
     const resetPayload = { userId, topicId };
     logger.emitting(ChatEvents.RESET_CHAT, resetPayload);
     socketRef.current.emit(ChatEvents.RESET_CHAT, resetPayload);
 
-    // 2. IMMEDIATELY ask for the chat history again.
-    // The server will have just deleted it, so this will return a fresh, empty state.
     const historyPayload = { userId, topicId };
     logger.emitting(ChatEvents.GET_CHAT_HISTORY, historyPayload);
     socketRef.current.emit(ChatEvents.GET_CHAT_HISTORY, historyPayload);
@@ -787,69 +950,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  useEffect(() => {
-    const audioMsg = messages.find(
-      (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
-    );
-
-    if (
-      audioMsg &&
-      audioRefs.current[audioMsg.id] &&
-      !autoplayFailed &&
-      (isAudioContextUnlocked || (window as any).isAudioContextUnlocked)
-    ) {
-      logger.info(
-        `Attempting to auto-play audio for message ID: ${audioMsg.id}`
-      );
-
-      const audio = audioRefs.current[audioMsg.id];
-      const playPromise = audio.play();
-
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
-            setPlayingAudio(audioMsg.id);
-            setMessages((current) =>
-              current.map((m) =>
-                m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
-              )
-            );
-          })
-          .catch((error) => {
-            logger.error("Autoplay was prevented by the browser.", error);
-            setAutoplayFailed(true);
-            toast.info("Autoplay is disabled. Tap a message to play audio.", {
-              duration: 5000,
-            });
-          });
-      }
-    }
-  }, [messages, autoplayFailed, isAudioContextUnlocked]);
-
   const handleShowAssessment = (assessments: any) => {
     logger.info("Showing assessment.", { assessments });
     onShowFeedback({ type: "assessment", content: assessments });
-  };
-
-  const toggleAudio = (id: string) => {
-    const audioElement = audioRefs.current[id];
-    if (!audioElement) return;
-    logger.info(
-      `Toggling audio for message ID: ${id}. Current playing: ${playingAudio}`
-    );
-    if (playingAudio === id) {
-      audioElement.pause();
-      setPlayingAudio(null);
-    } else {
-      if (playingAudio && audioRefs.current[playingAudio]) {
-        audioRefs.current[playingAudio].pause();
-      }
-      audioElement
-        .play()
-        .then(() => setPlayingAudio(id))
-        .catch(console.error);
-    }
   };
 
   const formatTime = (sec: number) =>
@@ -858,6 +961,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     ).padStart(2, "0")}`;
 
   return (
+    // The JSX part remains largely the same, only the audio player logic needs updates.
     <div className="flex flex-col max-h-[86vh] min-h-[86vh] md:min-h-[82vh] md:max-h-[82vh] max-w-[800px] mx-auto bg-gray-100 rounded-xl overflow-hidden shadow-2xl">
       <header className="flex justify-between items-center px-6 py-4 border-b bg-white">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -867,10 +971,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           {mode === "photo-mode"
             ? "Photo Mode"
             : mode === "reading-mode"
-              ? "Reading Mode"
-              : mode === "roleplay-mode"
-                ? "Roleplay Mode"
-                : "Chat Mode"}
+            ? "Reading Mode"
+            : mode === "roleplay-mode"
+            ? "Roleplay Mode"
+            : "Chat Mode"}
         </h2>
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <Clock className="h-4 w-4" />
@@ -896,14 +1000,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           You have reached your session limit.
         </div>
       )}
+      {chatCompleted && !isCompleteDialogOpen && (
+        <div className="bg-primary/80 backdrop-blur-sm text-white text-center p-2 text-sm font-semibold">
+          This conversation has ended.
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex flex-col gap-1 ${msg.type === "sent"
-              ? "self-end items-end"
-              : "self-start items-start"
-              }`}
+            className={`flex flex-col gap-1 ${
+              msg.type === "sent"
+                ? "self-end items-end"
+                : "self-start items-start"
+            }`}
           >
             {msg.loading ? (
               <div className="flex items-center gap-2 bg-white p-3 rounded-xl shadow-sm">
@@ -944,40 +1054,31 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
                 <div className="flex gap-2 items-center mt-2 flex-wrap">
                   {msg.type === "received" && msg.audioUrl && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleAudio(msg.id)}
-                        className={`flex items-center gap-1 p-1 h-auto ${playingAudio === msg.id
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleAudio(msg.id, msg.audioUrl)} // MODIFIED
+                      className={`flex items-center gap-1 p-1 h-auto ${
+                        playingAudioId === msg.id
                           ? "text-primary font-semibold"
                           : "text-gray-500"
-                          } ${autoplayFailed && !playingAudio
-                            ? "animate-pulse text-blue-600"
-                            : ""
-                          }`}
-                      >
-                        {playingAudio === msg.id ? (
-                          <Pause className="h-4 w-4" />
-                        ) : (
-                          <Play className="h-4 w-4" />
-                        )}
-                        <span className="text-xs">
-                          {autoplayFailed ? "Tap to Play" : "Tap to play"}
-                        </span>
-                      </Button>
-
-                      <audio
-                        ref={(el) => {
-                          if (el) audioRefs.current[msg.id] = el;
-                        }}
-                        src={msg.audioUrl}
-                        onEnded={() => setPlayingAudio(null)}
-                        className="hidden"
-                        playsInline
-                      />
-                    </>
+                      } ${
+                        autoplayFailed && !playingAudioId
+                          ? "animate-pulse text-blue-600"
+                          : ""
+                      }`}
+                    >
+                      {playingAudioId === msg.id ? (
+                        <Pause className="h-4 w-4" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
+                      <span className="text-xs">
+                        {autoplayFailed ? "Tap to Play" : "Play"}
+                      </span>
+                    </Button>
                   )}
+                  {/* --- MODIFIED: Removed the hidden <audio> element --- */}
                   {msg.type === "received" && msg.hasFeedback && (
                     <Button
                       variant="ghost"
@@ -995,33 +1096,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     </Button>
                   )}
                   {msg.type === "sent" && msg.audioUrl && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toggleAudio(msg.id)}
-                        className={`flex items-center gap-1 p-1 h-auto ${playingAudio === msg.id
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleAudio(msg.id, msg.audioUrl)} // MODIFIED
+                      className={`flex items-center gap-1 p-1 h-auto ${
+                        playingAudioId === msg.id
                           ? "text-primary font-semibold"
                           : "text-gray-500"
-                          }`}
-                      >
-                        {playingAudio === msg.id ? (
-                          <Pause className="h-4 w-4" />
-                        ) : (
-                          <Play className="h-4 w-4" />
-                        )}
-                        <span className="text-xs">Tap to play</span>
-                      </Button>
-                      <audio
-                        ref={(el) => {
-                          if (el) audioRefs.current[msg.id] = el;
-                        }}
-                        src={msg.audioUrl}
-                        onEnded={() => setPlayingAudio(null)}
-                        className="hidden"
-                        playsInline
-                      />
-                    </>
+                      }`}
+                    >
+                      {playingAudioId === msg.id ? (
+                        <Pause className="h-4 w-4" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
+                      <span className="text-xs">Play Recording</span>
+                    </Button>
                   )}
                   {msg.type === "sent" && msg.hasAssessment && (
                     <Button
@@ -1107,6 +1198,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       </form>
 
+      {/* --- All Dialogs remain unchanged --- */}
       <Dialog
         open={isCompleteDialogOpen}
         onOpenChange={(open) => !open && navigate(-1)}
@@ -1148,8 +1240,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* v-- ADDED --v */}
       <Dialog open={isBadgeModalOpen} onOpenChange={setIsBadgeModalOpen}>
         <DialogContent className="sm:max-w-md text-center">
           <DialogHeader>
@@ -1180,14 +1270,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
           )}
           <DialogFooter className="sm:justify-center">
-            <Button onClick={() => setIsBadgeModalOpen(false)} className="w-full">
+            <Button
+              onClick={() => setIsBadgeModalOpen(false)}
+              className="w-full"
+            >
               Claim & Continue
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
       <QuestionnaireModal
         open={isQueationnaireOpen}
         onClose={() => setIsQuestionnaireOpen(false)}
@@ -1198,4 +1289,4 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   );
 };
 
-export default ChatWindow;
+export default React.memo(ChatWindow);
