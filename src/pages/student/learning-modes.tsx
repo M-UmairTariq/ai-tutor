@@ -22,13 +22,13 @@ const modes = [
   },
   {
     title: "Reading Mode",
-    description: "Let's break down images and get instant feedback from AI.",
+    description: "Let’s read through fun stories and practice saying words with the AI.",
     image: debateModeAvatar,
     route: "/student/learning-modes/reading-mode",
   },
   {
     title: "Role Play Mode",
-    description: "Let's break down images and get instant feedback from AI.",
+    description: "Jump into exciting adventures and play fun roles with the AI.",
     image: roleplayModeAvatar,
     route: "/student/learning-modes/roleplay-mode",
   },

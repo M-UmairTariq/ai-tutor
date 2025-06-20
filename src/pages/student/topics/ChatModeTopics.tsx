@@ -21,6 +21,7 @@ const ChatModeTopics = () => {
 
   useEffect(() => {
     if (user?.id) {
+      console.log('Fetching chat mode topics for user:', user.id);
       dispatch(fetchTopics({ userId: user.id, topicMode: 'chat-mode' }));
     }
   }, [dispatch, user]);

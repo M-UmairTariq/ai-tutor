@@ -542,9 +542,47 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       }
     });
 
+    // socket.on(ChatEvents.MCQ_RESULT, (payload) => {
+    //   logger.receiving(ChatEvents.MCQ_RESULT, payload);
+    //   console.log("Received MCQ RESULT:", payload);
+
+    //   const { correctCount, required, message } = payload;
+
+    //   if (correctCount >= required) {
+    //     // Success toast
+    //     toast.success('Quiz Completed!', {
+    //       description: `Congratulations! You scored ${correctCount}/${correctCount + (5 - correctCount)} correctly.`,
+    //       duration: 4000,
+    //     });
+    //   } else {
+    //     // Failure toast
+    //     toast.error('Quiz Failed', {
+    //       description: message || `You scored ${correctCount}/${correctCount + (5 - correctCount)}. Please try again.`,
+    //       duration: 4000,
+    //     });
+    //   }
+    // });
+
+
     socket.on(ChatEvents.MCQ_RESULT, (payload) => {
       logger.receiving(ChatEvents.MCQ_RESULT, payload);
       console.log("Received MCQ RESULT:", payload);
+
+      const { correctCount, required, message } = payload;
+      const isSuccess = correctCount >= required;
+
+      // Show toast notification
+      if (isSuccess) {
+        toast.success('🎉 Quiz Passed!', {
+          description: `Great job! You got ${correctCount} correct answers.`,
+          duration: 4000,
+        });
+      } else {
+        toast.error('❌ Try Again', {
+          description: message,
+          duration: 4000,
+        });
+      }
     });
 
     socket.on(ChatEvents.ERROR, (payload) => {
@@ -935,6 +973,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     const historyPayload = { userId, topicId };
     logger.emitting(ChatEvents.GET_CHAT_HISTORY, historyPayload);
     socketRef.current.emit(ChatEvents.GET_CHAT_HISTORY, historyPayload);
+
+    window.location.reload();
   };
 
   const handleStillThere = (isContinuing: boolean) => {

@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 // import { useAppSelector } from '@/redux/hooks';
 import { Link, useLocation } from 'react-router-dom';
+import { Gift } from "lucide-react"
 import { Button } from '@/components/ui/button';
 import learningMode from "@/assets/images/sidebar/learningMode.png"
 import learderBoard from "@/assets/images/sidebar/leaderBoard.png"
@@ -93,8 +94,8 @@ export function StudentLayout({ children }: StudentLayoutProps) {
 
   const sidebarItems = [
     { path: '/student/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/student/rewards', icon: LayoutDashboard, label: 'Rewards' },
     { path: '/student/learning-modes', icon: LearningModeIcon, label: 'Learning Modes' },
+    { path: '/student/rewards', icon: Gift, label: 'Achievements' },
     { path: '/student/leaderboard', icon: LeaderboardIcon, label: 'Leaderboard' },
     // { path: '/student/support', icon: BookOpen, label: 'Support' },
   ];
