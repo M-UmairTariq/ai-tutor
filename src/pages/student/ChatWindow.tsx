@@ -196,7 +196,6 @@ function findLastIndex<T>(
   return -1;
 }
 
-
 const ChatWindow: React.FC<ChatWindowProps> = ({
   onShowFeedback,
   onTopicImage,
@@ -264,7 +263,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }, 2 * 60 * 1000);
   }, []);
 
-  const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+  const isIOS = () =>
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) ||
+    (navigator.userAgent.includes("Mac") && "ontouchend" in document);
 
   // --- MODIFIED: Universal Audio Unlocker ---
   // This function sets up a one-time event listener to unlock audio on the first user interaction.
@@ -301,7 +303,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       // --- THE FIX IS HERE ---
       // First, check if the Howler context exists and if it's not already running.
       // This prevents the "Cannot read properties of null" error.
-      if (Howler.ctx && Howler.ctx.state !== 'running') {
+      if (Howler.ctx && Howler.ctx.state !== "running") {
         Howler.ctx.resume().then(() => {
           logger.info("Audio context unlocked successfully by user gesture.");
           setIsAudioUnlocked(true);
@@ -339,7 +341,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   // --- END MODIFICATION
 
   const getSupportedMimeType = () => {
-    const types = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg"];
+    const types = [
+      "audio/mp4",
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg",
+    ];
     for (const type of types) {
       if (MediaRecorder.isTypeSupported(type)) return type;
     }
@@ -382,10 +389,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       resetActivityTimer();
     });
     // ... all your other socket.on listeners remain unchanged ...
-    socket.on("disconnect", () => {
-      logger.info("Socket disconnected.");
+    // In your main useEffect for the socket...
+
+    socket.on("disconnect", (reason: Socket.DisconnectReason) => {
+      logger.error(`Socket disconnected. Reason: ${reason}`);
       setIsSocketConnected(false);
-      if (!isInactiveDialogOpen) toast.warning("Connection lost...");
+
+      // Case 1: An unexpected network issue occurred.
+      // This is the ONLY case where we should show a "Connection lost" warning.
+      if (reason === "ping timeout" || reason === "transport close") {
+        if (!isInactiveDialogOpen) {
+          toast.warning("Connection lost. Trying to reconnect...");
+        }
+      }
+      // Case 2: The server deliberately disconnected the client.
+      else if (reason === "io server disconnect") {
+        toast.error("You have been disconnected by the server.");
+      }
+      // Case 3: Your own code called socket.disconnect().
+      // This is intentional, so we show NO toast. It would just be noise.
+      else if (reason === "io client disconnect") {
+        logger.info("Client-side disconnection initiated. No toast needed.");
+      }
     });
 
     socket.on("connect_error", (err) => {
@@ -535,15 +560,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       } else if (errorMessage.includes("user not found")) {
         toast.error("User authentication failed. Please log in again.");
         // Optional: Redirect to login after a few seconds
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate("/login"), 3000);
       } else if (errorMessage.includes("chat has been completed")) {
         setChatCompleted(true);
         // We can show a toast or let the banner (added below) handle the UI update.
         toast.info("This conversation has already ended.");
       } else {
         // Fallback for any other server-side issue
-        toast.error("An internal server error occurred. Please try again later.");
-        logger.error("Unhandled Internal Server Error:", payload.error || payload);
+        toast.error(
+          "An internal server error occurred. Please try again later."
+        );
+        logger.error(
+          "Unhandled Internal Server Error:",
+          payload.error || payload
+        );
       }
     });
     socket.on(ChatEvents.CHAT_COMPLETED, (payload) => {
@@ -583,7 +613,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(scrollToBottom, [messages]);
-
 
   const sendPlaceholder = () => {
     logger.info("Adding AI thinking placeholder to UI.");
@@ -716,31 +745,49 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       recorder.start();
       setIsRecording(true);
-      recordTimerRef.current = setInterval(() => setRecordTime((t) => t + 1), 1000);
-
+      recordTimerRef.current = setInterval(
+        () => setRecordTime((t) => t + 1),
+        1000
+      );
     } catch (err: any) {
       logger.error("CRITICAL: Error starting recording:", {
         name: err.name,
         message: err.message,
       });
       let errorMessage = "An unknown microphone error occurred.";
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        errorMessage = "Microphone access denied. Please enable it in your browser settings.";
-      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-        errorMessage = "No microphone found. Please connect a microphone and try again.";
-      } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
-        errorMessage = "Your microphone is already in use by another application.";
+      if (
+        err.name === "NotAllowedError" ||
+        err.name === "PermissionDeniedError"
+      ) {
+        errorMessage =
+          "Microphone access denied. Please enable it in your browser settings.";
+      } else if (
+        err.name === "NotFoundError" ||
+        err.name === "DevicesNotFoundError"
+      ) {
+        errorMessage =
+          "No microphone found. Please connect a microphone and try again.";
+      } else if (
+        err.name === "NotReadableError" ||
+        err.name === "TrackStartError"
+      ) {
+        errorMessage =
+          "Your microphone is already in use by another application.";
       }
       toast.error(errorMessage);
       cleanupRecording();
     }
   };
 
-  const handleQuestionnaireSubmit = (answers: { [questionId: string]: number }) => {
-    const mcqAnswers: McqAnswer[] = Object.entries(answers).map(([questionId, answerIndex]) => ({
-      questionId,
-      answerIndex
-    }));
+  const handleQuestionnaireSubmit = (answers: {
+    [questionId: string]: number;
+  }) => {
+    const mcqAnswers: McqAnswer[] = Object.entries(answers).map(
+      ([questionId, answerIndex]) => ({
+        questionId,
+        answerIndex,
+      })
+    );
     if (!chatId) {
       console.log("Chat ID is not available. Cannot submit MCQs.");
       return;
@@ -757,11 +804,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       if (!cancel && isIOS()) {
         logger.info("iOS: Forcing requestData() before stop.");
         mediaRecorderRef.current.requestData();
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
       mediaRecorderRef.current.stop();
-    }
-    else cleanupRecording();
+    } else cleanupRecording();
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -799,7 +845,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     );
 
     if (audioMsg && audioMsg.audioUrl && isAudioUnlocked && !autoplayFailed) {
-      logger.info(`Attempting to auto-play audio for message ID: ${audioMsg.id}`);
+      logger.info(
+        `Attempting to auto-play audio for message ID: ${audioMsg.id}`
+      );
 
       // Stop any currently playing sound
       if (soundRef.current) {
@@ -865,7 +913,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
   // --- END MODIFICATION
 
-
   // All other handlers like handleResetChat, handleStillThere, handleShowAssessment remain the same
   const handleResetChat = () => {
     logger.info("Handling chat reset and reconnecting socket.");
@@ -874,7 +921,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     const payload = { userId, topicId };
     logger.emitting(ChatEvents.RESET_CHAT, payload);
     socketRef.current.emit(ChatEvents.RESET_CHAT, payload);
-
 
     setMessages([]);
     setChatCompleted(false);
@@ -909,7 +955,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     onShowFeedback({ type: "assessment", content: assessments });
   };
 
-
   const formatTime = (sec: number) =>
     `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(
       sec % 60
@@ -923,7 +968,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <ChevronLeft className="h-5 w-5" />
         </Button>
         <h2 className="text-lg font-semibold">
-          {mode === "photo-mode" ? "Photo Mode" : mode === "reading-mode" ? "Reading Mode" : mode === "roleplay-mode" ? "Roleplay Mode" : "Chat Mode"}
+          {mode === "photo-mode"
+            ? "Photo Mode"
+            : mode === "reading-mode"
+            ? "Reading Mode"
+            : mode === "roleplay-mode"
+            ? "Roleplay Mode"
+            : "Chat Mode"}
         </h2>
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <Clock className="h-4 w-4" />
@@ -958,20 +1009,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex flex-col gap-1 ${msg.type === "sent" ? "self-end items-end" : "self-start items-start"}`}
+            className={`flex flex-col gap-1 ${
+              msg.type === "sent"
+                ? "self-end items-end"
+                : "self-start items-start"
+            }`}
           >
             {msg.loading ? (
               <div className="flex items-center gap-2 bg-white p-3 rounded-xl shadow-sm">
-                <LoaderPinwheel size={18} className="animate-spin text-primary" />
+                <LoaderPinwheel
+                  size={18}
+                  className="animate-spin text-primary"
+                />
                 <span className="text-sm text-gray-500">AI is thinking...</span>
               </div>
             ) : msg.messageType === "audio" && msg.audioURL ? (
               <div className="p-2 bg-primary rounded-xl shadow">
-                <audio src={msg.audioURL} controls className="message-audio h-10" />
+                <audio
+                  src={msg.audioURL}
+                  controls
+                  className="message-audio h-10"
+                />
               </div>
             ) : (
               <div
-                className={`p-3 rounded-xl max-w-md shadow-sm ${msg.type === "sent" ? "bg-primary text-white rounded-tr-none" : "bg-white text-gray-800 rounded-tl-none"}`}
+                className={`p-3 rounded-xl max-w-md shadow-sm ${
+                  msg.type === "sent"
+                    ? "bg-primary text-white rounded-tr-none"
+                    : "bg-white text-gray-800 rounded-tl-none"
+                }`}
               >
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
                   {msg.text}
@@ -982,9 +1048,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleAudio(msg.id, msg.audioUrl)} // MODIFIED
-                      className={`flex items-center gap-1 p-1 h-auto ${playingAudioId === msg.id ? "text-primary font-semibold" : "text-gray-500"} ${autoplayFailed && !playingAudioId ? "animate-pulse text-blue-600" : ""}`}
+                      className={`flex items-center gap-1 p-1 h-auto ${
+                        playingAudioId === msg.id
+                          ? "text-primary font-semibold"
+                          : "text-gray-500"
+                      } ${
+                        autoplayFailed && !playingAudioId
+                          ? "animate-pulse text-blue-600"
+                          : ""
+                      }`}
                     >
-                      {playingAudioId === msg.id ? (<Pause className="h-4 w-4" />) : (<Play className="h-4 w-4" />)}
+                      {playingAudioId === msg.id ? (
+                        <Pause className="h-4 w-4" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
                       <span className="text-xs">
                         {autoplayFailed ? "Tap to Play" : "Play"}
                       </span>
@@ -995,7 +1073,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onShowFeedback({ type: "feedback", content: msg.feedback })}
+                      onClick={() =>
+                        onShowFeedback({
+                          type: "feedback",
+                          content: msg.feedback,
+                        })
+                      }
                       className="flex items-center gap-1 text-primary text-xs p-1 h-auto"
                     >
                       <MessageCircle className="h-4 w-4" />
@@ -1007,9 +1090,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={() => toggleAudio(msg.id, msg.audioUrl)} // MODIFIED
-                      className={`flex items-center gap-1 p-1 h-auto ${playingAudioId === msg.id ? "text-primary font-semibold" : "text-gray-500"}`}
+                      className={`flex items-center gap-1 p-1 h-auto ${
+                        playingAudioId === msg.id
+                          ? "text-primary font-semibold"
+                          : "text-gray-500"
+                      }`}
                     >
-                      {playingAudioId === msg.id ? (<Pause className="h-4 w-4" />) : (<Play className="h-4 w-4" />)}
+                      {playingAudioId === msg.id ? (
+                        <Pause className="h-4 w-4" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
                       <span className="text-xs">Play Recording</span>
                     </Button>
                   )}
@@ -1038,25 +1129,59 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={isRecording ? `Recording... ${formatTime(recordTime)}` : "Write a message or press mic..."}
-            disabled={isRecording || chatCompleted || _sessionLimitReached || !isSocketConnected}
+            placeholder={
+              isRecording
+                ? `Recording... ${formatTime(recordTime)}`
+                : "Write a message or press mic..."
+            }
+            disabled={
+              isRecording ||
+              chatCompleted ||
+              _sessionLimitReached ||
+              !isSocketConnected
+            }
             className="flex-1 border-none focus:ring-0 bg-transparent"
           />
           {isRecording ? (
             <div className="flex items-center gap-1">
-              <Button type="button" variant="ghost" size="icon" onClick={() => stopRecording(true)} className="text-red-500 hover:bg-red-100 rounded-full">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => stopRecording(true)}
+                className="text-red-500 hover:bg-red-100 rounded-full"
+              >
                 <X className="h-5 w-5" />
               </Button>
-              <Button type="button" variant="ghost" size="icon" onClick={() => stopRecording(false)} className="text-green-500 hover:bg-green-100 rounded-full">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => stopRecording(false)}
+                className="text-green-500 hover:bg-green-100 rounded-full"
+              >
                 <ArrowUp className="h-5 w-5" />
               </Button>
             </div>
           ) : message.trim() ? (
-            <Button type="submit" variant="ghost" size="icon" className="text-primary" disabled={!isSocketConnected || chatCompleted}>
+            <Button
+              type="submit"
+              variant="ghost"
+              size="icon"
+              className="text-primary"
+              disabled={!isSocketConnected || chatCompleted}
+            >
               <Send className="h-5 w-5" />
             </Button>
           ) : (
-            <Button type="button" variant="ghost" size="icon" className="text-primary" onClick={startRecording} disabled={!isSocketConnected || chatCompleted}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-primary"
+              onClick={startRecording}
+              disabled={!isSocketConnected || chatCompleted}
+            >
               <Mic className="h-5 w-5" />
             </Button>
           )}
@@ -1064,27 +1189,44 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </form>
 
       {/* --- All Dialogs remain unchanged --- */}
-      <Dialog open={isCompleteDialogOpen} onOpenChange={(open) => !open && navigate(-1)}>
+      <Dialog
+        open={isCompleteDialogOpen}
+        onOpenChange={(open) => !open && navigate(-1)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Chat Completed</DialogTitle>
-            <DialogDescription>This conversation has ended. Would you like to start over?</DialogDescription>
+            <DialogDescription>
+              This conversation has ended. Would you like to start over?
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => navigate(-1)}>End Session</Button>
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              End Session
+            </Button>
             <Button onClick={handleResetChat}>Reset Chat</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={isInactiveDialogOpen} onOpenChange={(open) => !open && handleStillThere(false)}>
+      <Dialog
+        open={isInactiveDialogOpen}
+        onOpenChange={(open) => !open && handleStillThere(false)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Are you still there?</DialogTitle>
-            <DialogDescription>Your session was paused due to inactivity. Do you want to continue?</DialogDescription>
+            <DialogDescription>
+              Your session was paused due to inactivity. Do you want to
+              continue?
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => handleStillThere(false)}>No, End Session</Button>
-            <Button onClick={() => handleStillThere(true)}>Yes, I'm Here</Button>
+            <Button variant="outline" onClick={() => handleStillThere(false)}>
+              No, End Session
+            </Button>
+            <Button onClick={() => handleStillThere(true)}>
+              Yes, I'm Here
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1101,14 +1243,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </DialogHeader>
           {unlockedBadgeInfo && (
             <div className="flex flex-col items-center justify-center p-4 my-4 bg-gray-50 rounded-lg">
-              <img src={unlockedBadgeInfo.iconUrl} alt={unlockedBadgeInfo.name} className="w-24 h-24 mb-4 drop-shadow-lg" />
-              <h3 className="text-xl font-semibold text-primary">{unlockedBadgeInfo.name}</h3>
-              <p className="text-sm text-gray-600 mt-1">{unlockedBadgeInfo.description}</p>
-              <p className="text-lg font-bold text-yellow-600 mt-4">+{unlockedBadgeInfo.pointValue} Points</p>
+              <img
+                src={unlockedBadgeInfo.iconUrl}
+                alt={unlockedBadgeInfo.name}
+                className="w-24 h-24 mb-4 drop-shadow-lg"
+              />
+              <h3 className="text-xl font-semibold text-primary">
+                {unlockedBadgeInfo.name}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {unlockedBadgeInfo.description}
+              </p>
+              <p className="text-lg font-bold text-yellow-600 mt-4">
+                +{unlockedBadgeInfo.pointValue} Points
+              </p>
             </div>
           )}
           <DialogFooter className="sm:justify-center">
-            <Button onClick={() => setIsBadgeModalOpen(false)} className="w-full">
+            <Button
+              onClick={() => setIsBadgeModalOpen(false)}
+              className="w-full"
+            >
               Claim & Continue
             </Button>
           </DialogFooter>
