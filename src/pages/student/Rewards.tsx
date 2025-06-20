@@ -1,24 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Trophy,
-  Lock,
   Star,
   Calendar,
   Clock,
   BookOpen,
-  Gift,
 } from "lucide-react";
-import apiClient from "@/config/ApiConfig"; // Make sure this path is correct for your project
-
-// Describes the structure of a single level
-interface Level {
-  name: string;
-  range: string;
-  points: number;
-  color: "green" | "teal" | "blue" | "purple";
-  minPoints: number;
-  maxPoints: number;
-}
+import apiClient from "@/config/ApiConfig"; 
 
 // Describes a single achievement from your API
 interface Achievement {
@@ -54,12 +42,6 @@ interface UserStats {
 
 // --- Component Props ---
 
-interface LevelCardProps {
-  level: Level;
-  isActive: boolean;
-  isUnlocked: boolean;
-}
-
 interface AchievementCardProps {
   achievement: Achievement;
   isEarned: boolean;
@@ -71,62 +53,62 @@ interface AchievementCardProps {
 const Rewards = (): JSX.Element => {
   const [achievements, setAchievements] = useState<AchievementCategory[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [totalPoints, setTotalPoints] = useState<number>(0);
+  const [_error, setError] = useState<string | null>(null);
+  const [_totalPoints, _setTotalPoints] = useState<number>(0);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [claimingReward, setClaimingReward] = useState<string | null>(null);
 
   // Static data defining the level structure
-  const levelData: Level[] = [
-    {
-      name: "Initiate",
-      range: "0-100",
-      points: 100,
-      color: "green",
-      minPoints: 0,
-      maxPoints: 100,
-    },
-    {
-      name: "Apprentice",
-      range: "100-250",
-      points: 250,
-      color: "green",
-      minPoints: 100,
-      maxPoints: 250,
-    },
-    {
-      name: "Strategist",
-      range: "250-500",
-      points: 500,
-      color: "teal",
-      minPoints: 250,
-      maxPoints: 500,
-    },
-    {
-      name: "Specialist",
-      range: "500-1000",
-      points: 1000,
-      color: "blue",
-      minPoints: 500,
-      maxPoints: 1000,
-    },
-    {
-      name: "Virtuoso",
-      range: "1000-2000",
-      points: 2000,
-      color: "blue",
-      minPoints: 1000,
-      maxPoints: 2000,
-    },
-    {
-      name: "Mastermind",
-      range: "2000+",
-      points: 2000,
-      color: "purple",
-      minPoints: 2000,
-      maxPoints: Infinity,
-    },
-  ];
+  // const levelData: Level[] = [
+  //   {
+  //     name: "Initiate",
+  //     range: "0-100",
+  //     points: 100,
+  //     color: "green",
+  //     minPoints: 0,
+  //     maxPoints: 100,
+  //   },
+  //   {
+  //     name: "Apprentice",
+  //     range: "100-250",
+  //     points: 250,
+  //     color: "green",
+  //     minPoints: 100,
+  //     maxPoints: 250,
+  //   },
+  //   {
+  //     name: "Strategist",
+  //     range: "250-500",
+  //     points: 500,
+  //     color: "teal",
+  //     minPoints: 250,
+  //     maxPoints: 500,
+  //   },
+  //   {
+  //     name: "Specialist",
+  //     range: "500-1000",
+  //     points: 1000,
+  //     color: "blue",
+  //     minPoints: 500,
+  //     maxPoints: 1000,
+  //   },
+  //   {
+  //     name: "Virtuoso",
+  //     range: "1000-2000",
+  //     points: 2000,
+  //     color: "blue",
+  //     minPoints: 1000,
+  //     maxPoints: 2000,
+  //   },
+  //   {
+  //     name: "Mastermind",
+  //     range: "2000+",
+  //     points: 2000,
+  //     color: "purple",
+  //     minPoints: 2000,
+  //     maxPoints: Infinity,
+  //   },
+  // ];
 
   useEffect(() => {
     fetchAchievements();
@@ -205,33 +187,33 @@ const Rewards = (): JSX.Element => {
     }
   };
 
-  const getCurrentLevel = (): Level => {
-    return (
-      levelData.find(
-        (level) =>
-          totalPoints >= level.minPoints && totalPoints < level.maxPoints
-      ) || levelData[0]
-    );
-  };
+  // const getCurrentLevel = (): Level => {
+  //   return (
+  //     levelData.find(
+  //       (level) =>
+  //         totalPoints >= level.minPoints && totalPoints < level.maxPoints
+  //     ) || levelData[0]
+  //   );
+  // };
 
-  const getNextLevel = (): Level | null => {
-    const currentLevel = getCurrentLevel();
-    const currentIndex = levelData.indexOf(currentLevel);
-    return currentIndex < levelData.length - 1
-      ? levelData[currentIndex + 1]
-      : null;
-  };
+  // const getNextLevel = (): Level | null => {
+  //   const currentLevel = getCurrentLevel();
+  //   const currentIndex = levelData.indexOf(currentLevel);
+  //   return currentIndex < levelData.length - 1
+  //     ? levelData[currentIndex + 1]
+  //     : null;
+  // };
 
-  const getProgressToNextLevel = (): number => {
-    const currentLevel = getCurrentLevel();
-    const nextLevel = getNextLevel();
-    if (!nextLevel) return 100;
-    const progress =
-      ((totalPoints - currentLevel.minPoints) /
-        (nextLevel.minPoints - currentLevel.minPoints)) *
-      100;
-    return Math.min(progress, 100);
-  };
+  // const getProgressToNextLevel = (): number => {
+  //   const currentLevel = getCurrentLevel();
+  //   const nextLevel = getNextLevel();
+  //   if (!nextLevel) return 100;
+  //   const progress =
+  //     ((totalPoints - currentLevel.minPoints) /
+  //       (nextLevel.minPoints - currentLevel.minPoints)) *
+  //     100;
+  //   return Math.min(progress, 100);
+  // };
 
   // --- Reusable Sub-Components ---
 
@@ -412,9 +394,9 @@ const Rewards = (): JSX.Element => {
     );
   }
 
-  const currentLevel = getCurrentLevel();
-  const nextLevel = getNextLevel();
-  const progress = getProgressToNextLevel();
+  // const currentLevel = getCurrentLevel();
+  // const nextLevel = getNextLevel();
+  // const progress = getProgressToNextLevel();
 
   const categoryIcons: { [key: string]: JSX.Element } = {
     Topics: <BookOpen className="w-5 h-5" />,
