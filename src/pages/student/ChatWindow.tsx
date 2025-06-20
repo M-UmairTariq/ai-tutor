@@ -1191,7 +1191,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
-import { Howl, Howler } from "howler"; // --- MODIFIED: Import Howler
+import { Howl, Howler } from "howler"; 
 import {
   Mic,
   Send,
@@ -1458,31 +1458,70 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   // --- MODIFIED: Universal Audio Unlocker ---
   // This function sets up a one-time event listener to unlock audio on the first user interaction.
-  const unlockAudio = useCallback(() => {
-    if (isAudioUnlocked) return;
+  // const unlockAudio = useCallback(() => {
+  //   if (isAudioUnlocked) return;
 
-    const unlock = () => {
+  //   const unlock = () => {
+  //     Howler.ctx.resume().then(() => {
+  //       logger.info("Audio context unlocked successfully by user gesture.");
+  //       setIsAudioUnlocked(true);
+  //       document.removeEventListener("touchstart", unlock, true);
+  //       document.removeEventListener("touchend", unlock, true);
+  //       document.removeEventListener("click", unlock, true);
+  //     });
+  //   };
+
+  //   logger.info("Setting up audio unlock listeners...");
+  //   document.addEventListener("touchstart", unlock, true);
+  //   document.addEventListener("touchend", unlock, true);
+  //   document.addEventListener("click", unlock, true);
+
+  //   // Cleanup function to remove listeners if the component unmounts
+  //   return () => {
+  //     document.removeEventListener("touchstart", unlock, true);
+  //     document.removeEventListener("touchend", unlock, true);
+  //     document.removeEventListener("click", unlock, true);
+  //   };
+  // }, [isAudioUnlocked]);
+  // --- CORRECTED: Universal Audio Unlocker ---
+const unlockAudio = useCallback(() => {
+  if (isAudioUnlocked) return;
+
+  const unlock = () => {
+    // --- THE FIX IS HERE ---
+    // First, check if the Howler context exists and if it's not already running.
+    // This prevents the "Cannot read properties of null" error.
+    if (Howler.ctx && Howler.ctx.state !== 'running') {
       Howler.ctx.resume().then(() => {
         logger.info("Audio context unlocked successfully by user gesture.");
         setIsAudioUnlocked(true);
+        // It's crucial to remove the listeners after a successful unlock.
         document.removeEventListener("touchstart", unlock, true);
         document.removeEventListener("touchend", unlock, true);
         document.removeEventListener("click", unlock, true);
       });
-    };
-
-    logger.info("Setting up audio unlock listeners...");
-    document.addEventListener("touchstart", unlock, true);
-    document.addEventListener("touchend", unlock, true);
-    document.addEventListener("click", unlock, true);
-
-    // Cleanup function to remove listeners if the component unmounts
-    return () => {
+    } else {
+      // If the context doesn't exist yet or is already running, we don't need to do anything.
+      // We can consider the audio "unlocked" for our app's logic and clean up the listeners.
+      setIsAudioUnlocked(true);
       document.removeEventListener("touchstart", unlock, true);
       document.removeEventListener("touchend", unlock, true);
       document.removeEventListener("click", unlock, true);
-    };
-  }, [isAudioUnlocked]);
+    }
+  };
+
+  logger.info("Setting up audio unlock listeners...");
+  document.addEventListener("touchstart", unlock, true);
+  document.addEventListener("touchend", unlock, true);
+  document.addEventListener("click", unlock, true);
+
+  // Cleanup function to remove listeners if the component unmounts before unlock
+  return () => {
+    document.removeEventListener("touchstart", unlock, true);
+    document.removeEventListener("touchend", unlock, true);
+    document.removeEventListener("click", unlock, true);
+  };
+}, [isAudioUnlocked]);
 
   useEffect(() => {
     unlockAudio();
