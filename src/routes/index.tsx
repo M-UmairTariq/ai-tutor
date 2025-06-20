@@ -22,6 +22,8 @@ import PhotoModeTopics from '@/pages/student/topics/PhotoModeTopics';
 import Leaderboard from '@/pages/student/Leaderboard';
 import Chat from '@/pages/student/ChatPage';
 import Rewards from '@/pages/student/Rewards';
+import ReadingModeTopics from '@/pages/student/topics/ReadingModeTopics';
+import RolePlayModeTopics from '@/pages/student/topics/RolePlayModeTopics';
 
 const AppRoutes = () => {
   // const { user } = useAppSelector((state) => state.auth);
@@ -152,6 +154,26 @@ const AppRoutes = () => {
           <StudentRoute>
             <StudentLayout>
               <PhotoModeTopics />
+            </StudentLayout>
+          </StudentRoute>
+        }
+      />
+      <Route
+        path="/student/learning-modes/reading-mode"
+        element={
+          <StudentRoute>
+            <StudentLayout>
+              <ReadingModeTopics />
+            </StudentLayout>
+          </StudentRoute>
+        }
+      />
+      <Route
+        path="/student/learning-modes/roleplay-mode"
+        element={
+          <StudentRoute>
+            <StudentLayout>
+              <RolePlayModeTopics />
             </StudentLayout>
           </StudentRoute>
         }
