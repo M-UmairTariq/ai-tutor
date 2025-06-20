@@ -594,7 +594,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       const errorMessage = (payload.message || "").toLowerCase();
 
       // Check for specific, user-facing error messages from the server
-      if (errorMessage.includes("session limit reached")) {
+      alert(errorMessage)
+      if (errorMessage.includes("daily session limit")) {
         _setSessionLimitReached(true);
         toast.error("You have reached your daily session limit.");
       } else if (errorMessage.includes("user not found")) {
