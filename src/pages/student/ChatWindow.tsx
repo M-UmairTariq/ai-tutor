@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
-import { Howl, Howler } from "howler"; 
+import { Howl, Howler } from "howler";
 import {
   Mic,
   Send,
@@ -211,7 +211,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   >(null);
   const [_sessionLimitReached, _setSessionLimitReached] = useState(false);
   const [chatCompleted, setChatCompleted] = useState(false);
-  
+
   // --- MODIFIED: Simplified audio state management
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const soundRef = useRef<Howl | null>(null);
@@ -294,44 +294,44 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   //   };
   // }, [isAudioUnlocked]);
   // --- CORRECTED: Universal Audio Unlocker ---
-const unlockAudio = useCallback(() => {
-  if (isAudioUnlocked) return;
+  const unlockAudio = useCallback(() => {
+    if (isAudioUnlocked) return;
 
-  const unlock = () => {
-    // --- THE FIX IS HERE ---
-    // First, check if the Howler context exists and if it's not already running.
-    // This prevents the "Cannot read properties of null" error.
-    if (Howler.ctx && Howler.ctx.state !== 'running') {
-      Howler.ctx.resume().then(() => {
-        logger.info("Audio context unlocked successfully by user gesture.");
+    const unlock = () => {
+      // --- THE FIX IS HERE ---
+      // First, check if the Howler context exists and if it's not already running.
+      // This prevents the "Cannot read properties of null" error.
+      if (Howler.ctx && Howler.ctx.state !== 'running') {
+        Howler.ctx.resume().then(() => {
+          logger.info("Audio context unlocked successfully by user gesture.");
+          setIsAudioUnlocked(true);
+          // It's crucial to remove the listeners after a successful unlock.
+          document.removeEventListener("touchstart", unlock, true);
+          document.removeEventListener("touchend", unlock, true);
+          document.removeEventListener("click", unlock, true);
+        });
+      } else {
+        // If the context doesn't exist yet or is already running, we don't need to do anything.
+        // We can consider the audio "unlocked" for our app's logic and clean up the listeners.
         setIsAudioUnlocked(true);
-        // It's crucial to remove the listeners after a successful unlock.
         document.removeEventListener("touchstart", unlock, true);
         document.removeEventListener("touchend", unlock, true);
         document.removeEventListener("click", unlock, true);
-      });
-    } else {
-      // If the context doesn't exist yet or is already running, we don't need to do anything.
-      // We can consider the audio "unlocked" for our app's logic and clean up the listeners.
-      setIsAudioUnlocked(true);
+      }
+    };
+
+    logger.info("Setting up audio unlock listeners...");
+    document.addEventListener("touchstart", unlock, true);
+    document.addEventListener("touchend", unlock, true);
+    document.addEventListener("click", unlock, true);
+
+    // Cleanup function to remove listeners if the component unmounts before unlock
+    return () => {
       document.removeEventListener("touchstart", unlock, true);
       document.removeEventListener("touchend", unlock, true);
       document.removeEventListener("click", unlock, true);
-    }
-  };
-
-  logger.info("Setting up audio unlock listeners...");
-  document.addEventListener("touchstart", unlock, true);
-  document.addEventListener("touchend", unlock, true);
-  document.addEventListener("click", unlock, true);
-
-  // Cleanup function to remove listeners if the component unmounts before unlock
-  return () => {
-    document.removeEventListener("touchstart", unlock, true);
-    document.removeEventListener("touchend", unlock, true);
-    document.removeEventListener("click", unlock, true);
-  };
-}, [isAudioUnlocked]);
+    };
+  }, [isAudioUnlocked]);
 
   useEffect(() => {
     unlockAudio();
@@ -347,7 +347,7 @@ const unlockAudio = useCallback(() => {
   };
 
   const lastRecordingEndTimeRef = useRef<number | null>(null);
-  
+
   useEffect(() => {
     // This entire useEffect for socket connection remains largely the same
     if (!userId) {
@@ -525,8 +525,26 @@ const unlockAudio = useCallback(() => {
     socket.on(ChatEvents.ERROR, (payload) => {
       logger.receiving(ChatEvents.ERROR, payload);
       removeLoadingMessage();
-      if (payload.message.includes("")) return
-      toast.error(payload.message);
+
+      const errorMessage = (payload.message || "").toLowerCase();
+
+      // Check for specific, user-facing error messages from the server
+      if (errorMessage.includes("session limit reached")) {
+        _setSessionLimitReached(true);
+        toast.error("You have reached your daily session limit.");
+      } else if (errorMessage.includes("user not found")) {
+        toast.error("User authentication failed. Please log in again.");
+        // Optional: Redirect to login after a few seconds
+        // setTimeout(() => navigate('/login'), 3000);
+      } else if (errorMessage.includes("chat has been completed")) {
+        setChatCompleted(true);
+        // We can show a toast or let the banner (added below) handle the UI update.
+        toast.info("This conversation has already ended.");
+      } else {
+        // Fallback for any other server-side issue
+        toast.error("An internal server error occurred. Please try again later.");
+        logger.error("Unhandled Internal Server Error:", payload.error || payload);
+      }
     });
     socket.on(ChatEvents.CHAT_COMPLETED, (payload) => {
       logger.receiving(ChatEvents.CHAT_COMPLETED, payload);
@@ -792,8 +810,8 @@ const unlockAudio = useCallback(() => {
 
       const sound = new Howl({
         src: [audioMsg.audioUrl],
-        html5: true, // Crucial for iOS compatibility
-        autoplay: true, // Let Howler handle the autoplay attempt
+        html5: true,
+        autoplay: true,
         onplay: () => {
           logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
           setPlayingAudioId(audioMsg.id);
@@ -804,12 +822,12 @@ const unlockAudio = useCallback(() => {
           );
         },
         onplayerror: () => {
-            logger.error(`Autoplay failed for message ID: ${audioMsg.id}`);
-            setAutoplayFailed(true);
-            sound.unload(); // Clean up the failed sound instance
-            toast.info("Autoplay is disabled. Tap a message to play audio.", {
-                duration: 5000,
-            });
+          logger.error(`Autoplay failed for message ID: ${audioMsg.id}`);
+          setAutoplayFailed(true);
+          sound.unload();
+          toast.info("Autoplay is disabled. Tap a message to play audio.", {
+            duration: 5000,
+          });
         },
         onend: () => {
           setPlayingAudioId(null);
@@ -819,7 +837,7 @@ const unlockAudio = useCallback(() => {
     }
   }, [messages, isAudioUnlocked, autoplayFailed]);
   // --- END MODIFICATION
-  
+
   // --- MODIFIED: Audio toggle logic using Howler ---
   const toggleAudio = (id: string, audioUrl: string | undefined) => {
     if (!audioUrl) return;
@@ -833,7 +851,7 @@ const unlockAudio = useCallback(() => {
 
     // Stop any other sound that might be playing
     if (soundRef.current) {
-        soundRef.current.stop();
+      soundRef.current.stop();
     }
 
     // Create and play the new sound
@@ -887,7 +905,7 @@ const unlockAudio = useCallback(() => {
       navigate(-1);
     }
   };
-  
+
   const handleShowAssessment = (assessments: any) => {
     logger.info("Showing assessment.", { assessments });
     onShowFeedback({ type: "assessment", content: assessments });
@@ -933,6 +951,11 @@ const unlockAudio = useCallback(() => {
           You have reached your session limit.
         </div>
       )}
+      {chatCompleted && !isCompleteDialogOpen && (
+        <div className="bg-primary/80 backdrop-blur-sm text-white text-center p-2 text-sm font-semibold">
+          This conversation has ended.
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
         {messages.map((msg) => (
           <div
@@ -963,7 +986,7 @@ const unlockAudio = useCallback(() => {
                       onClick={() => toggleAudio(msg.id, msg.audioUrl)} // MODIFIED
                       className={`flex items-center gap-1 p-1 h-auto ${playingAudioId === msg.id ? "text-primary font-semibold" : "text-gray-500"} ${autoplayFailed && !playingAudioId ? "animate-pulse text-blue-600" : ""}`}
                     >
-                      {playingAudioId === msg.id ? ( <Pause className="h-4 w-4" /> ) : ( <Play className="h-4 w-4" /> )}
+                      {playingAudioId === msg.id ? (<Pause className="h-4 w-4" />) : (<Play className="h-4 w-4" />)}
                       <span className="text-xs">
                         {autoplayFailed ? "Tap to Play" : "Play"}
                       </span>
@@ -982,13 +1005,13 @@ const unlockAudio = useCallback(() => {
                     </Button>
                   )}
                   {msg.type === "sent" && msg.audioUrl && (
-                     <Button
+                    <Button
                       variant="outline"
                       size="sm"
                       onClick={() => toggleAudio(msg.id, msg.audioUrl)} // MODIFIED
                       className={`flex items-center gap-1 p-1 h-auto ${playingAudioId === msg.id ? "text-primary font-semibold" : "text-gray-500"}`}
                     >
-                      {playingAudioId === msg.id ? ( <Pause className="h-4 w-4" /> ) : ( <Play className="h-4 w-4" /> )}
+                      {playingAudioId === msg.id ? (<Pause className="h-4 w-4" />) : (<Play className="h-4 w-4" />)}
                       <span className="text-xs">Play Recording</span>
                     </Button>
                   )}
