@@ -1073,15 +1073,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
             ) : (
               <div
-                className={`p-3 rounded-xl max-w-md shadow-sm ${
-                  msg.type === "sent"
-                    ? "bg-primary text-white rounded-tr-none"
-                    : "bg-white text-gray-800 rounded-tl-none"
+              className={`p-3 rounded-xl max-w-md shadow-sm ${msg.type === "sent"
+                ? "bg-primary text-white rounded-tr-none"
+                : "bg-white text-gray-800 rounded-tl-none"
                 }`}
               >
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {msg.text}
-                </p>
+                {msg.text && (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {msg.text.split(/(\*\*.*?\*\*)/g).map((part, i) =>
+                      part.startsWith("**") && part.endsWith("**") ? (
+                        <span key={i} className="font-bold text-blue-600">
+                          {part.slice(2, -2)}
+                        </span>
+                      ) : (
+                        part
+                      )
+                    )}
+                  </p>
+                )}
+
                 <div className="flex gap-2 items-center mt-2 flex-wrap">
                   {msg.type === "received" && msg.audioUrl && (
                     <Button
