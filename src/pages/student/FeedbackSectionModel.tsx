@@ -109,7 +109,7 @@ const FeedbackSectionModal: React.FC<FeedbackSectionModalProps> = ({ isOpen, onC
     <Dialog open={isOpen} onOpenChange={() => onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className=" gap-2">
             {isAssessment ? (
               <BarChart size={24} className="bg-gradient-to-r from-violet-500 to-blue-400 bg-clip-text text-transparent" />
             ) : (
