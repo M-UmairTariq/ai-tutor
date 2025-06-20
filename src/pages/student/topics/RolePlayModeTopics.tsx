@@ -89,7 +89,7 @@ const RolePlayModeTopics = () => {
                 </CardContent>
                   
                   <CardFooter className='flex justify-end'>
-                    <Link to={`/student/learning-mode/${topic?.id}/${topic?.topicName}?mode=photo-mode`} >
+                    <Link to={`/student/learning-mode/${topic?.id}/${topic?.topicName}?mode=roleplay-mode`} >
 
                     <Button
                       size="sm"
