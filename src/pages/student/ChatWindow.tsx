@@ -535,7 +535,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       } else if (errorMessage.includes("user not found")) {
         toast.error("User authentication failed. Please log in again.");
         // Optional: Redirect to login after a few seconds
-        // setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate('/login'), 3000);
       } else if (errorMessage.includes("chat has been completed")) {
         setChatCompleted(true);
         // We can show a toast or let the banner (added below) handle the UI update.
