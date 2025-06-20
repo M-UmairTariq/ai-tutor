@@ -594,7 +594,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       const errorMessage = (payload.message || "").toLowerCase();
 
       // Check for specific, user-facing error messages from the server
-      alert(errorMessage)
+      console.log(errorMessage, "error Message")
       if (errorMessage.includes("daily session limit")) {
         _setSessionLimitReached(true);
         toast.error("You have reached your daily session limit.");
@@ -607,7 +607,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         // setChatCompleted(true);
         // We can show a toast or let the banner (added below) handle the UI update.
         toast.info("This conversation has already ended.");
-      } else if (errorMessage.includes("No speech recognized")) {
+      } else if (errorMessage.includes("no speech recognized")) {
         toast.info("No speech recognized. Please speak clearly.")
       }       
       else {
