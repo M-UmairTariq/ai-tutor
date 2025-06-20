@@ -95,7 +95,7 @@ export function StudentLayout({ children }: StudentLayoutProps) {
   const sidebarItems = [
     { path: '/student/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/student/learning-modes', icon: LearningModeIcon, label: 'Learning Modes' },
-    { path: '/student/rewards', icon: Gift, label: 'Achievements' },
+    { path: '/student/achievements', icon: Gift, label: 'Achievements' },
     { path: '/student/leaderboard', icon: LeaderboardIcon, label: 'Leaderboard' },
     // { path: '/student/support', icon: BookOpen, label: 'Support' },
   ];

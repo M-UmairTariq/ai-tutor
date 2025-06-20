@@ -58,7 +58,7 @@ const FeedbackSection: React.FC<FeedbackSectionProps> = ({ isOpen, onClose: _onC
         <h4 className="text-sm font-medium text-gray-700">Your Speech Assessment</h4>
 
         <div className="border rounded p-3 mb-2 bg-gray-50">
-          {metrics.map(({ key, label, score }) => (
+          {/* {metrics.map(({ key, label, score }) => (
             <div
               key={key}
               className="flex justify-between items-center transition-transform duration-300 hover:scale-105"
@@ -68,7 +68,20 @@ const FeedbackSection: React.FC<FeedbackSectionProps> = ({ isOpen, onClose: _onC
                 {Math.round(score)}% ({getDescriptor(score)})
               </span>
             </div>
-          ))}
+          ))} */}
+          <div className="grid grid-cols-2 items-center gap-x-4 gap-y-1">
+            {metrics.map(({ key, label, score }) => (
+              <React.Fragment key={key}>
+                {/* Column 1: The Label */}
+                <span className="justify-self-start font-semibold text-gray-700">{label}:</span>
+
+                {/* Column 2: The Score */}
+                <span className="justify-self-end text-right font-bold bg-gradient-to-r from-violet-500 to-blue-400 bg-clip-text text-transparent">
+                  {Math.round(score)}% ({getDescriptor(score)})
+                </span>
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
         <div>
@@ -134,8 +147,8 @@ const FeedbackSection: React.FC<FeedbackSectionProps> = ({ isOpen, onClose: _onC
                 isAssessment
                   ? renderAssessment(parsedAssessment as Assessment)
                   : <p className="bg-gradient-to-r from-violet-500 to-blue-400 bg-clip-text text-transparent">
-                      {feedback.content as string}
-                    </p>                
+                    {feedback.content as string}
+                  </p>
               ) : (
                 <p className="text-gray-500">
                   Click the "View Feedback" or "View Assessment" button on any message to see details here.

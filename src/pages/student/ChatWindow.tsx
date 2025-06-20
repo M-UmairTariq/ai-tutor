@@ -522,8 +522,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         return newMessages;
       });
       if (isCompleted) {
-        setChatCompleted(true);
-        setIsCompleteDialogOpen(true);
+        if(mode !== "reading-mode") {
+          setChatCompleted(true);
+          setIsCompleteDialogOpen(true);
+        }
       }
     });
 
@@ -599,11 +601,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         toast.error("User authentication failed. Please log in again.");
         // Optional: Redirect to login after a few seconds
         setTimeout(() => navigate("/login"), 3000);
-      } else if (errorMessage.includes("chat has been completed")) {
-        setChatCompleted(true);
+      } 
+      else if (errorMessage.includes("chat has been completed")) {
+        // setChatCompleted(true);
         // We can show a toast or let the banner (added below) handle the UI update.
         toast.info("This conversation has already ended.");
-      } else {
+      } else if (errorMessage.includes("No speech recognized")) {
+        toast.info("No speech recognized. Please speak clearly.")
+      }       
+      else {
         // Fallback for any other server-side issue
         toast.error(
           "An internal server error occurred. Please try again later."
