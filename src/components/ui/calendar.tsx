@@ -65,7 +65,6 @@ function Calendar({
 
     return usageRecords.some(record => {
       const localDate = convertUTCToLocalDate(record.date);
-      console.log("localDate", localDate);
       return isSameDate(day, localDate);
     });
   }, [usageRecords]);

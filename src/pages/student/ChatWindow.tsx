@@ -92,6 +92,8 @@ const ChatEvents = {
   BADGE_UNLOCKED: "badge_unlocked", // <-- ADDED
   MCQ_LIST: "mcq_list",
   SUBMIT_MCQS: "submit_mcqs",
+  MCQ_RESULT: "mcq_result",
+
 } as const;
 
 interface ServerToClientEvents {
@@ -159,7 +161,8 @@ interface ClientToServerEvents {
     textMessage: string;
   }) => void;
   [ChatEvents.SESSION_STATUS]: (payload: { userId: string }) => void;
-  [ChatEvents.SUBMIT_MCQS]: (payload: McqAnswer[]) => void;
+  [ChatEvents.SUBMIT_MCQS]: (
+    payload: { chatId: string; answers: McqAnswer[] }) => void
 }
 
 interface Message {
@@ -444,8 +447,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       console.log("Received MCQ List:", payload);
       if (mode === "reading-mode") {
         setMcqList(payload.questions);
+        setChatId(payload.chatId);
         setIsQuestionnaireOpen(true);
       }
+    });
+
+    socket.on(ChatEvents.MCQ_RESULT, (payload) => {
+      logger.receiving(ChatEvents.MCQ_RESULT, payload);
+      console.log("Received MCQ RESULT:", payload);
+      // if (mode === "reading-mode") {
+      //   setMcqList(payload.questions);
+      //   setChatId(payload.chatId);
+      //   setIsQuestionnaireOpen(true);
+      // }
     });
 
     socket.on(ChatEvents.ERROR, (payload) => {
@@ -637,11 +651,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         toast.error("An unknown error occurred during recording.");
         cleanupRecording();
       };
-      
+
       recorder.start();
       setIsRecording(true);
       recordTimerRef.current = setInterval(() => setRecordTime((t) => t + 1), 1000);
-      
+
     } catch (err: any) {
       logger.error("CRITICAL: Error starting recording:", {
         name: err.name,
@@ -661,6 +675,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   // In your component where you handle the questionnaire submission
+  // Fixed handleQuestionnaireSubmit function
   const handleQuestionnaireSubmit = (answers: { [questionId: string]: number }) => {
     // Transform the answers object to McqAnswer array format
     const mcqAnswers: McqAnswer[] = Object.entries(answers).map(([questionId, answerIndex]) => ({
@@ -668,10 +683,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       answerIndex
     }));
 
-    socketRef?.current?.emit(ChatEvents.SUBMIT_MCQS, mcqAnswers);
+    if (!chatId) {
+      console.log("Chat ID is not available. Cannot submit MCQs.");
+      return;
+    }
 
-    // Optional: Close modal or show success message
-    console.log('Questionnaire submitted:', mcqAnswers);
+    const payload = {
+      chatId,
+      answers: mcqAnswers
+    };
+
+    // console.log("Submitting MCQs:", payload);
+
+    logger.emitting(ChatEvents.SUBMIT_MCQS, payload);
+
+    socketRef.current?.emit(ChatEvents.SUBMIT_MCQS, payload);
+
   };
 
   const stopRecording = async (cancel = false) => {
@@ -726,7 +753,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     logger.emitting(ChatEvents.RESET_CHAT, payload);
     socketRef.current.emit(ChatEvents.RESET_CHAT, payload);
 
-    
+
     // Clear local state immediately for a responsive UI.
     // This makes the app feel faster.
     setMessages([]);
