@@ -524,7 +524,8 @@ const unlockAudio = useCallback(() => {
 
     socket.on(ChatEvents.ERROR, (payload) => {
       logger.receiving(ChatEvents.ERROR, payload);
-      removeLoadingMessage(); 
+      removeLoadingMessage();
+      if (payload.message.includes("")) return
       toast.error(payload.message);
     });
     socket.on(ChatEvents.CHAT_COMPLETED, (payload) => {

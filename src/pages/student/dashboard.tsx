@@ -373,7 +373,7 @@ export default function LanguageLearningDashboard() {
     // Show error state if there's an error
     if (error) {
         return (
-            <div className="flex flex-col border border-[var(--border-light)] rounded-3xl container p-4">
+            <div className="flex flex-col border border-[var(--border-light)] rounded-3xl p-4">
                 <div className="flex items-center justify-center h-64">
                     <div className="text-center">
                         <h3 className="text-lg font-medium text-red-600 mb-2">Error Loading Dashboard</h3>
@@ -393,7 +393,7 @@ export default function LanguageLearningDashboard() {
     // Show message if no user ID
     if (!currentUserId) {
         return (
-            <div className="flex flex-col border border-[var(--border-light)] rounded-3xl container p-4">
+            <div className="flex flex-col border border-[var(--border-light)] rounded-3xl p-4">
                 <div className="flex items-center justify-center h-64">
                     <div className="text-center">
                         <h3 className="text-lg font-medium text-gray-600 mb-2">No User Found</h3>
@@ -405,7 +405,7 @@ export default function LanguageLearningDashboard() {
     }
 
     return (
-        <div className="flex flex-col border border-[var(--border-light)] rounded-3xl container p-4">
+        <div className="flex flex-col border border-[var(--border-light)] rounded-3xl p-4">
             <div className="grid grid-cols-1 md:grid-cols-3 md:gap-6 mb-6 w-full mx-auto">
                 {isLoading ? (
                     // Profile Skeleton
