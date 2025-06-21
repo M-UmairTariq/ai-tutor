@@ -544,28 +544,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       }
     });
 
-    // socket.on(ChatEvents.MCQ_RESULT, (payload) => {
-    //   logger.receiving(ChatEvents.MCQ_RESULT, payload);
-    //   console.log("Received MCQ RESULT:", payload);
-
-    //   const { correctCount, required, message } = payload;
-
-    //   if (correctCount >= required) {
-    //     // Success toast
-    //     toast.success('Quiz Completed!', {
-    //       description: `Congratulations! You scored ${correctCount}/${correctCount + (5 - correctCount)} correctly.`,
-    //       duration: 4000,
-    //     });
-    //   } else {
-    //     // Failure toast
-    //     toast.error('Quiz Failed', {
-    //       description: message || `You scored ${correctCount}/${correctCount + (5 - correctCount)}. Please try again.`,
-    //       duration: 4000,
-    //     });
-    //   }
-    // });
-
-
     socket.on(ChatEvents.MCQ_RESULT, (payload) => {
       logger.receiving(ChatEvents.MCQ_RESULT, payload);
       console.log("Received MCQ RESULT:", payload);
@@ -884,49 +862,95 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   // --- MODIFIED: Autoplay logic using Howler ---
-  useEffect(() => {
-    const audioMsg = messages.find(
-      (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
+  // useEffect(() => {
+  //   const audioMsg = messages.find(
+  //     (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
+  //   );
+
+  //   if (audioMsg && audioMsg.audioUrl && isAudioUnlocked && !autoplayFailed) {
+  //     logger.info(
+  //       `Attempting to auto-play audio for message ID: ${audioMsg.id}`
+  //     );
+
+  //     // Stop any currently playing sound
+  //     if (soundRef.current) {
+  //       soundRef.current.stop();
+  //     }
+
+  //     const sound = new Howl({
+  //       src: [audioMsg.audioUrl],
+  //       html5: true,
+  //       autoplay: true,
+  //       onplay: () => {
+  //         logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
+  //         setPlayingAudioId(audioMsg.id);
+  //         setMessages((current) =>
+  //           current.map((m) =>
+  //             m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
+  //           )
+  //         );
+  //       },
+  //       onplayerror: () => {
+  //         logger.error(`Autoplay failed for message ID: ${audioMsg.id}`);
+  //         setAutoplayFailed(true);
+  //         sound.unload();
+  //         toast.info("Autoplay is disabled. Tap a message to play audio.", {
+  //           duration: 5000,
+  //         });
+  //       },
+  //       onend: () => {
+  //         setPlayingAudioId(null);
+  //       },
+  //     });
+  //     soundRef.current = sound;
+  //   }
+  // }, [messages, isAudioUnlocked, autoplayFailed]);
+  // --- MODIFIED: Autoplay logic using Howler ---
+useEffect(() => {
+  const audioMsg = messages.find(
+    (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
+  );
+
+  // --- THE FIX IS HERE ---
+  // Add !isIOS() to the condition to prevent autoplay on iPhones/iPads.
+  if (audioMsg && audioMsg.audioUrl && isAudioUnlocked && !autoplayFailed && !isIOS()) {
+    logger.info(
+      `Attempting to auto-play audio for message ID: ${audioMsg.id}`
     );
 
-    if (audioMsg && audioMsg.audioUrl && isAudioUnlocked && !autoplayFailed) {
-      logger.info(
-        `Attempting to auto-play audio for message ID: ${audioMsg.id}`
-      );
-
-      // Stop any currently playing sound
-      if (soundRef.current) {
-        soundRef.current.stop();
-      }
-
-      const sound = new Howl({
-        src: [audioMsg.audioUrl],
-        html5: true,
-        autoplay: true,
-        onplay: () => {
-          logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
-          setPlayingAudioId(audioMsg.id);
-          setMessages((current) =>
-            current.map((m) =>
-              m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
-            )
-          );
-        },
-        onplayerror: () => {
-          logger.error(`Autoplay failed for message ID: ${audioMsg.id}`);
-          setAutoplayFailed(true);
-          sound.unload();
-          toast.info("Autoplay is disabled. Tap a message to play audio.", {
-            duration: 5000,
-          });
-        },
-        onend: () => {
-          setPlayingAudioId(null);
-        },
-      });
-      soundRef.current = sound;
+    // Stop any currently playing sound
+    if (soundRef.current) {
+      soundRef.current.stop();
     }
-  }, [messages, isAudioUnlocked, autoplayFailed]);
+
+    const sound = new Howl({
+      src: [audioMsg.audioUrl],
+      html5: true,
+      autoplay: true,
+      onplay: () => {
+        logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
+        setPlayingAudioId(audioMsg.id);
+        setMessages((current) =>
+          current.map((m) =>
+            m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
+          )
+        );
+      },
+      onplayerror: () => {
+        logger.error(`Autoplay failed for message ID: ${audioMsg.id}`);
+        setAutoplayFailed(true);
+        sound.unload();
+        toast.info("Autoplay is disabled. Tap a message to play audio.", {
+          duration: 5000,
+        });
+      },
+      onend: () => {
+        setPlayingAudioId(null);
+      },
+    });
+    soundRef.current = sound;
+  }
+}, [messages, isAudioUnlocked, autoplayFailed]);
   // --- END MODIFICATION
 
   // --- MODIFIED: Audio toggle logic using Howler ---
