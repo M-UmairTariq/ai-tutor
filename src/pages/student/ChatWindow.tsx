@@ -164,6 +164,11 @@ interface ClientToServerEvents {
     chatId: string;
     answers: McqAnswer[];
   }) => void;
+  no_user_response: (payload: {
+    userId: string;
+    topicId: string;
+    chatId: string;
+  }) => void;
 }
 
 interface Message {
@@ -252,7 +257,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const mode = searchParams.get("mode");
   const userData = JSON.parse(localStorage.getItem("AiTutorUser") || "{}");
   const userId = userData?.id;
-  const SOCKET_URL = "https://tutorapp-cyfeg4ghe7gydbcy.uaenorth-01.azurewebsites.net/";
+  const SOCKET_URL =
+    "https://tutorapp-cyfeg4ghe7gydbcy.uaenorth-01.azurewebsites.net/";
 
   const resetActivityTimer = useCallback(() => {
     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
@@ -260,7 +266,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       logger.info("User inactive, disconnecting socket.");
       socketRef.current?.disconnect();
       setIsInactiveDialogOpen(true);
-    }, 2 * 60 * 1000);
+    }, 5 * 60 * 1000);
   }, []);
 
   const isIOS = () =>
@@ -435,6 +441,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       }));
       setMessages(formatted);
       setChatId(newChatId);
+
+      if (formatted.length > 0) {
+        const lastMsg = formatted[formatted.length - 1];
+        if (lastMsg.type === "received" && lastMsg.messageType === "text") {
+          startInactivityTimer();
+        }
+      }
+
       if (chatHistory.some((m: any) => m.isCompleted)) {
         if (mode !== "reading-mode") {
           setChatCompleted(true);
@@ -462,9 +476,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       sendPlaceholder();
     });
 
-    socket.on(ChatEvents.AI_RESPONSE, (payload) => {
-      logger.receiving(ChatEvents.AI_RESPONSE, payload);
-      const { ai_response, feedback } = payload;
+    socket.on(ChatEvents.STREAMING_COMPLETE, (payload) => {
+      logger.receiving(ChatEvents.STREAMING_COMPLETE, payload);
+      const { ai_response, feedback, ttsAudioUrl, isCompleted } = payload;
       setMessages((prev) => {
         const newMessages = [...prev];
         const i = findLastIndex(newMessages, (msg) => msg.loading === true);
@@ -477,10 +491,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             text: ai_response,
             feedback,
             hasFeedback: !!feedback,
+            audioUrl: ttsAudioUrl,
+            audioPlayed: false,
           };
         }
         return newMessages;
       });
+      if (isCompleted) {
+        if (mode !== "reading-mode") {
+          setChatCompleted(true);
+          setIsCompleteDialogOpen(true);
+        }
+      }
     });
 
     socket.on(ChatEvents.TTS_AUDIO_URL, (payload) => {
@@ -522,7 +544,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         return newMessages;
       });
       if (isCompleted) {
-        if(mode !== "reading-mode") {
+        if (mode !== "reading-mode") {
           setChatCompleted(true);
           setIsCompleteDialogOpen(true);
         }
@@ -553,12 +575,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       // Show toast notification
       if (isSuccess) {
-        toast.success('🎉 Quiz Passed!', {
+        toast.success("🎉 Quiz Passed!", {
           description: `Great job! You got ${correctCount} correct answers.`,
           duration: 4000,
         });
       } else {
-        toast.error('❌ Try Again', {
+        toast.error("❌ Try Again", {
           description: message,
           duration: 4000,
         });
@@ -572,7 +594,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       const errorMessage = (payload.message || "").toLowerCase();
 
       // Check for specific, user-facing error messages from the server
-      console.log(errorMessage, "error Message")
+      console.log(errorMessage, "error Message");
       if (errorMessage.includes("daily session limit")) {
         _setSessionLimitReached(true);
         toast.error("You have reached your daily session limit.");
@@ -580,15 +602,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         toast.error("User authentication failed. Please log in again.");
         // Optional: Redirect to login after a few seconds
         setTimeout(() => navigate("/login"), 3000);
-      } 
-      else if (errorMessage.includes("chat has been completed")) {
+      } else if (errorMessage.includes("chat has been completed")) {
         // setChatCompleted(true);
         // We can show a toast or let the banner (added below) handle the UI update.
         toast.info("This conversation has already ended.");
       } else if (errorMessage.includes("no speech recognized")) {
-        toast.info("No speech recognized. Please speak clearly.")
-      }       
-      else {
+        toast.info("No speech recognized. Please speak clearly.");
+      } else {
         // Fallback for any other server-side issue
         toast.error(
           "An internal server error occurred. Please try again later."
@@ -833,6 +853,46 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     } else cleanupRecording();
   };
 
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearInactivityTimer = () => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+  };
+
+  const startInactivityTimer = () => {
+    clearInactivityTimer();
+    inactivityTimerRef.current = setTimeout(() => {
+      if (socketRef.current && userId && topicId && chatId) {
+        logger.info("No user response for 20s, emitting no_user_response");
+        sendPlaceholder();
+        socketRef.current.emit("no_user_response", { userId, topicId, chatId });
+      }
+    }, 2 * 60 * 1000);
+  };
+
+  useEffect(() => {
+    if (message.trim()) {
+      clearInactivityTimer();
+    }
+  }, [message]);
+
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (
+      lastMsg &&
+      lastMsg.type === "received" &&
+      lastMsg.messageType === "text" &&
+      !lastMsg.loading
+    ) {
+      startInactivityTimer();
+    }
+
+    return clearInactivityTimer;
+  }, [messages]);
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     logger.info("Form submitted.");
@@ -859,6 +919,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     socketRef.current?.emit(ChatEvents.TEXT, payload);
     setMessage("");
     resetActivityTimer();
+    clearInactivityTimer();
   };
 
   // --- MODIFIED: Autoplay logic using Howler ---
@@ -906,51 +967,57 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   //   }
   // }, [messages, isAudioUnlocked, autoplayFailed]);
   // --- MODIFIED: Autoplay logic using Howler ---
-useEffect(() => {
-  const audioMsg = messages.find(
-    (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
-  );
-
-  // --- THE FIX IS HERE ---
-  // Add !isIOS() to the condition to prevent autoplay on iPhones/iPads.
-  if (audioMsg && audioMsg.audioUrl && isAudioUnlocked && !autoplayFailed && !isIOS()) {
-    logger.info(
-      `Attempting to auto-play audio for message ID: ${audioMsg.id}`
+  useEffect(() => {
+    const audioMsg = messages.find(
+      (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
     );
 
-    // Stop any currently playing sound
-    if (soundRef.current) {
-      soundRef.current.stop();
-    }
+    // --- THE FIX IS HERE ---
+    // Add !isIOS() to the condition to prevent autoplay on iPhones/iPads.
+    if (
+      audioMsg &&
+      audioMsg.audioUrl &&
+      isAudioUnlocked &&
+      !autoplayFailed &&
+      !isIOS()
+    ) {
+      logger.info(
+        `Attempting to auto-play audio for message ID: ${audioMsg.id}`
+      );
 
-    const sound = new Howl({
-      src: [audioMsg.audioUrl],
-      html5: true,
-      autoplay: true,
-      onplay: () => {
-        logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
-        setPlayingAudioId(audioMsg.id);
-        setMessages((current) =>
-          current.map((m) =>
-            m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
-          )
-        );
-      },
-      onplayerror: () => {
-        logger.error(`Autoplay failed for message ID: ${audioMsg.id}`);
-        setAutoplayFailed(true);
-        sound.unload();
-        toast.info("Autoplay is disabled. Tap a message to play audio.", {
-          duration: 5000,
-        });
-      },
-      onend: () => {
-        setPlayingAudioId(null);
-      },
-    });
-    soundRef.current = sound;
-  }
-}, [messages, isAudioUnlocked, autoplayFailed]);
+      // Stop any currently playing sound
+      if (soundRef.current) {
+        soundRef.current.stop();
+      }
+
+      const sound = new Howl({
+        src: [audioMsg.audioUrl],
+        html5: true,
+        autoplay: true,
+        onplay: () => {
+          logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
+          setPlayingAudioId(audioMsg.id);
+          setMessages((current) =>
+            current.map((m) =>
+              m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
+            )
+          );
+        },
+        onplayerror: () => {
+          logger.error(`Autoplay failed for message ID: ${audioMsg.id}`);
+          setAutoplayFailed(true);
+          sound.unload();
+          toast.info("Autoplay is disabled. Tap a message to play audio.", {
+            duration: 5000,
+          });
+        },
+        onend: () => {
+          setPlayingAudioId(null);
+        },
+      });
+      soundRef.current = sound;
+    }
+  }, [messages, isAudioUnlocked, autoplayFailed]);
   // --- END MODIFICATION
 
   // --- MODIFIED: Audio toggle logic using Howler ---
@@ -1104,9 +1171,10 @@ useEffect(() => {
               </div>
             ) : (
               <div
-              className={`p-3 rounded-xl max-w-md shadow-sm ${msg.type === "sent"
-                ? "bg-primary text-white rounded-tr-none"
-                : "bg-white text-gray-800 rounded-tl-none"
+                className={`p-3 rounded-xl max-w-md shadow-sm ${
+                  msg.type === "sent"
+                    ? "bg-primary text-white rounded-tr-none"
+                    : "bg-white text-gray-800 rounded-tl-none"
                 }`}
               >
                 {msg.text && (
