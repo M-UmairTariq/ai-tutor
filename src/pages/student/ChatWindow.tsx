@@ -93,6 +93,7 @@ const ChatEvents = {
   MCQ_LIST: "mcq_list",
   SUBMIT_MCQS: "submit_mcqs",
   MCQ_RESULT: "mcq_result",
+  CONTENT_PAYLOAD: "content_payload",
 } as const;
 
 interface ServerToClientEvents {
@@ -137,6 +138,12 @@ interface ServerToClientEvents {
     iconUrl: string;
     pointValue: number;
   }) => void;
+  [ChatEvents.CONTENT_PAYLOAD]: (payload: {
+    contentPayload: {
+      content: string;
+      contentAudioUrl: string;
+    };
+  }) => void;
 }
 
 interface ClientToServerEvents {
@@ -164,10 +171,16 @@ interface ClientToServerEvents {
     chatId: string;
     answers: McqAnswer[];
   }) => void;
+<<<<<<< Updated upstream
   no_user_response: (payload: {
     userId: string;
     topicId: string;
     chatId: string;
+=======
+  [ChatEvents.CONTENT_PAYLOAD]: (payload: {
+    userId: string;
+    topicId: string;
+>>>>>>> Stashed changes
   }) => void;
 }
 
@@ -229,6 +242,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [isQueationnaireOpen, setIsQuestionnaireOpen] = React.useState(false);
   const [mcqList, setMcqList] = useState<any[]>([]);
+  const [contentPayload, setContentPayload] = useState<{
+    content: string;
+    audioUrl: string;
+  } | null>(null);
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
 
   const [unlockedBadgeInfo, setUnlockedBadgeInfo] = useState<{
     name: string;
@@ -257,8 +275,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const mode = searchParams.get("mode");
   const userData = JSON.parse(localStorage.getItem("AiTutorUser") || "{}");
   const userId = userData?.id;
+<<<<<<< Updated upstream
   const SOCKET_URL =
     "https://tutorapp-cyfeg4ghe7gydbcy.uaenorth-01.azurewebsites.net/";
+=======
+  const SOCKET_URL = "https://malamute-content-cougar.ngrok-free.app";
+>>>>>>> Stashed changes
 
   const resetActivityTimer = useCallback(() => {
     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
@@ -387,6 +409,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       const historyPayload = { userId, topicId };
       logger.emitting(ChatEvents.GET_CHAT_HISTORY, historyPayload);
       socket.emit(ChatEvents.GET_CHAT_HISTORY, historyPayload);
+
+      if (mode === "reading-mode" || mode === "roleplay-mode") {
+        const payload = { userId, topicId };
+        logger.emitting(ChatEvents.CONTENT_PAYLOAD, payload);
+        socket.emit(ChatEvents.CONTENT_PAYLOAD, payload);
+      }
 
       const sessionPayload = { userId };
       logger.emitting(ChatEvents.SESSION_STATUS, sessionPayload);
@@ -554,6 +582,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     socket.on(ChatEvents.SESSION_STATUS_UPDATE, (payload) => {
       logger.receiving(ChatEvents.SESSION_STATUS_UPDATE, payload);
       setSessionTimeRemaining(payload.remainingSeconds);
+    });
+
+    socket.on(ChatEvents.CONTENT_PAYLOAD, (payload) => {
+      logger.receiving(ChatEvents.CONTENT_PAYLOAD, payload);
+      const { contentPayload: data } = payload;
+      if (data) {
+        const { content, contentAudioUrl } = data;
+        if (
+          (mode === "reading-mode" || mode === "roleplay-mode") &&
+          content &&
+          contentAudioUrl
+        ) {
+          setContentPayload({ content, audioUrl: contentAudioUrl });
+        }
+      }
     });
 
     socket.on(ChatEvents.MCQ_LIST, (payload) => {
@@ -1144,6 +1187,59 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       )}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+        {contentPayload && (
+          <div className="p-4 rounded-lg shadow-sm bg-white border border-gray-200">
+            <p
+              className={`text-gray-800 text-base leading-relaxed whitespace-pre-wrap transition-all duration-300 ${
+                !isContentExpanded ? "line-clamp-3" : "line-clamp-none"
+              }`}
+            >
+              {contentPayload.content.split(/(\*\*.*?\*\*)/g).map((part, i) =>
+                part.startsWith("**") && part.endsWith("**") ? (
+                  <span key={i} className="font-bold text-blue-600">
+                    {part.slice(2, -2)}
+                  </span>
+                ) : (
+                  part
+                )
+              )}
+            </p>
+            <div className="flex items-center gap-4 mt-2">
+              {contentPayload.audioUrl && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    toggleAudio(
+                      "content-payload-audio",
+                      contentPayload.audioUrl
+                    )
+                  }
+                  className={`flex items-center gap-1 p-1 h-auto ${
+                    playingAudioId === "content-payload-audio"
+                      ? "text-primary font-semibold"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {playingAudioId === "content-payload-audio" ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                  <span className="text-xs">Play Audio</span>
+                </Button>
+              )}
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => setIsContentExpanded(!isContentExpanded)}
+                className="text-sm text-blue-600 p-0 h-auto"
+              >
+                {isContentExpanded ? "See Less" : "See More"}
+              </Button>
+            </div>
+          </div>
+        )}
         {messages.map((msg) => (
           <div
             key={msg.id}
