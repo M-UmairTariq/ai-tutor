@@ -171,16 +171,15 @@ interface ClientToServerEvents {
     chatId: string;
     answers: McqAnswer[];
   }) => void;
-<<<<<<< Updated upstream
   no_user_response: (payload: {
     userId: string;
     topicId: string;
     chatId: string;
-=======
+  }) => void;
   [ChatEvents.CONTENT_PAYLOAD]: (payload: {
     userId: string;
     topicId: string;
->>>>>>> Stashed changes
+    chatId: string;
   }) => void;
 }
 
@@ -275,13 +274,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const mode = searchParams.get("mode");
   const userData = JSON.parse(localStorage.getItem("AiTutorUser") || "{}");
   const userId = userData?.id;
-<<<<<<< Updated upstream
   const SOCKET_URL =
-    "https://tutorapp-cyfeg4ghe7gydbcy.uaenorth-01.azurewebsites.net/";
-=======
-  const SOCKET_URL = "https://malamute-content-cougar.ngrok-free.app";
->>>>>>> Stashed changes
-
+    "https://tutorapp-cyfeg4ghe7gydbcy.uaenorth-01.azurewebsites.net";
   const resetActivityTimer = useCallback(() => {
     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
     activityTimerRef.current = setTimeout(() => {
