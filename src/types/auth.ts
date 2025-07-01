@@ -5,6 +5,9 @@ export interface User {
     name: string;
     email: string;
     role: UserRole;
+    username: string;
+    phoneNumber: string;
+    schoolCategory: string;
   }
   
   export interface LoginCredentials {

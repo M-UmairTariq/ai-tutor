@@ -22,7 +22,7 @@ const modes = [
   },
   {
     title: "Reading Mode",
-    description: "Let’s read through fun stories and practice saying words with the AI.",
+    description: "Let's read through fun stories and practice saying words with the AI.",
     image: debateModeAvatar,
     route: "/student/learning-modes/reading-mode",
   },
@@ -37,6 +37,17 @@ const modes = [
 const LearningModes: React.FC = () => {
   const navigate = useNavigate();
 
+  const user = localStorage.getItem("AiTutorUser");
+  const parsedUser = JSON.parse(user || "{}");
+  const schoolCategory = parsedUser?.schoolCategory;
+
+  let filteredModes = modes;
+  if (schoolCategory === "government") {
+    filteredModes = modes.filter(
+      (mode) => mode.title === "Reading Mode" || mode.title === "Role Play Mode"
+    );
+  }
+
   // const [isQueationnaireOpen, setIsQuestionnaireOpen] = React.useState(true);
 
   const handleStartButton = (route: string) => {
@@ -47,7 +58,7 @@ const LearningModes: React.FC = () => {
   return (
     <div className="mt-6 lg:mt-4 mx-2">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {modes.map((mode, index) => (
+        {filteredModes.map((mode, index) => (
           <div
             key={index}
             className="flex flex-col lg:flex-row  border border-gray-150 rounded-3xl p-4 bg-white hover:shadow-md transition-shadow duration-300"

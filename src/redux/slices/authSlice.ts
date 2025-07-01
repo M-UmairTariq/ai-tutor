@@ -1,14 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { User } from '@/types/auth';
 
 export type UserRole = 'student' | 'teacher';
-
-export interface User {
-  id: string;
-  username: string;
-  phoneNumber: string;
-  role?: UserRole;
-}
 
 export interface AuthResponse {
   status: string;

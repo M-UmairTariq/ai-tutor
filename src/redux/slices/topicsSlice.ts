@@ -7,6 +7,7 @@ export interface Topic {
   topicName: string;
   attachmentUrl: string;
   description?: string;
+  unlocksAt?: string | null;
 }
 
 interface TopicsState {

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchTopics } from '@/redux/slices/topicsSlice';
+import { Lock } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -28,6 +29,54 @@ const PhotoModeTopics = () => {
       toast.error(error);
     }
   }, [error]);
+
+  const isTopicLocked = (topic: any) => {
+    if (user?.schoolCategory !== 'government') {
+      return false;
+    }
+    if (!topic.unlocksAt) {
+      return false;
+    }
+    return new Date(topic.unlocksAt) > new Date();
+  };
+
+  const getUnlockCountdown = (unlocksAt: string) => {
+    const unlockDate = new Date(unlocksAt);
+    const now = new Date();
+    const diffTime = unlockDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 0) {
+      return "Unlocks today";
+    }
+    if (diffDays === 1) {
+      return "Unlocks tomorrow";
+    }
+    return `Unlocks in ${diffDays} days`;
+  };
+
+  const sortedTopics = [...topics].sort((a, b) => {
+    if (user?.schoolCategory !== 'government') {
+      return 0;
+    }
+
+    const aLocked = isTopicLocked(a);
+    const bLocked = isTopicLocked(b);
+
+    const aDate = a.unlocksAt ? new Date(a.unlocksAt).getTime() : 0;
+    const bDate = b.unlocksAt ? new Date(b.unlocksAt).getTime() : 0;
+
+    if (aLocked && bLocked) {
+      return aDate - bDate; // both locked, sort by date
+    }
+    if (aLocked) {
+      return 1; // a is locked, b is not, so b comes first
+    }
+    if (bLocked) {
+      return -1; // b is locked, a is not, so a comes first
+    }
+    return 0; // both unlocked
+  });
 
   return (
     <div className="mx-auto px-4 py-6">
@@ -73,34 +122,46 @@ const PhotoModeTopics = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {topics.length > 0 ? (
-            topics.map((topic: any) => (
-              <Card key={topic.id} className="overflow-hidden flex flex-col">
-                <div className="aspect-video w-full relative overflow-hidden">
-                  <img
-                    src={topic.attachmentUrl}
-                    alt={topic.topicName}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </div>
+          {sortedTopics.length > 0 ? (
+            sortedTopics.map((topic: any) => {
+              const locked = isTopicLocked(topic);
+              const unlockCountdown = locked && topic.unlocksAt ? getUnlockCountdown(topic.unlocksAt) : null;
 
-                <CardContent className="flex-grow p-4">
-                  <h3 className="font-medium text-base">{topic.topicName}</h3>
-                </CardContent>
-                  
-                  <CardFooter className='flex justify-end'>
-                    <Link to={`/student/learning-mode/${topic?.id}/${topic?.topicName}?mode=photo-mode`} >
+              return (
+                <Card key={topic.id} className="overflow-hidden flex flex-col">
+                  <div className="aspect-video w-full relative overflow-hidden">
+                    <img
+                      src={topic.attachmentUrl}
+                      alt={topic.topicName}
+                      className={`absolute inset-0 w-full h-full object-cover ${locked ? 'filter grayscale' : ''}`}
+                    />
+                    {locked && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-white p-4">
+                        <Lock className="w-8 h-8 mb-2" />
+                        <span className="text-center font-semibold">{unlockCountdown}</span>
+                      </div>
+                    )}
+                  </div>
 
-                    <Button
-                      size="sm"
-                    >
-                      Start
-                    </Button>
-                  </Link>
-                  </CardFooter>
+                  <CardContent className="flex-grow p-4">
+                    <h3 className="font-medium text-base">{topic.topicName}</h3>
+                  </CardContent>
+                    
+                    <CardFooter className='flex justify-end'>
+                      <Link to={`/student/learning-mode/${topic?.id}/${topic?.topicName}?mode=photo-mode`} className={locked ? 'pointer-events-none' : ''}>
 
-              </Card>
-            ))
+                      <Button
+                        size="sm"
+                        disabled={locked}
+                      >
+                        Start
+                      </Button>
+                    </Link>
+                    </CardFooter>
+
+                </Card>
+              );
+            })
           ) : (
             <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground">No topics available</p>
