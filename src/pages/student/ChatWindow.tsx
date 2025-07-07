@@ -275,7 +275,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const userData = JSON.parse(localStorage.getItem("AiTutorUser") || "{}");
   const userId = userData?.id;
   const SOCKET_URL =
-    "https://tutorapp-cyfeg4ghe7gydbcy.uaenorth-01.azurewebsites.net";
+    "https://malamute-content-cougar.ngrok-free.app";
   const resetActivityTimer = useCallback(() => {
     if (activityTimerRef.current) clearTimeout(activityTimerRef.current);
     activityTimerRef.current = setTimeout(() => {
