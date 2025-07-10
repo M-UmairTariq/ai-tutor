@@ -5,7 +5,7 @@ import chatModeAvatar from "@/assets/svgs/chatModeAvatar.svg";
 import photoModeAvatar from "@/assets/svgs/photoModeAvatar.svg";
 import debateModeAvatar from "@/assets/svgs/debateModeAvatar.svg";
 import roleplayModeAvatar from "@/assets/svgs/roleplayModeAvatar.svg";
-// import QuestionnaireModal from "@/components/ui/QuestionaireModal";
+  // import QuestionnaireModal from "@/components/ui/QuestionaireModal";
 
 const modes = [
   {
@@ -31,6 +31,12 @@ const modes = [
     description: "Jump into exciting adventures and play fun roles with the AI.",
     image: roleplayModeAvatar,
     route: "/student/learning-modes/roleplay-mode",
+  },
+  {
+    title: "Listening Mode",
+    description: "Listen to stories and practice saying words with the AI.",
+    image: roleplayModeAvatar,
+    route: "/student/learning-modes/listening-mode",
   },
 ];
 

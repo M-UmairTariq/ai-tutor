@@ -24,6 +24,7 @@ import Chat from '@/pages/student/ChatPage';
 import Rewards from '@/pages/student/Rewards';
 import ReadingModeTopics from '@/pages/student/topics/ReadingModeTopics';
 import RolePlayModeTopics from '@/pages/student/topics/RolePlayModeTopics';
+import ListeningModeTopics from '@/pages/student/topics/ListeningModeTopics';
 
 const AppRoutes = () => {
   // const { user } = useAppSelector((state) => state.auth);
@@ -178,6 +179,16 @@ const AppRoutes = () => {
           </StudentRoute>
         }
       />
+      <Route
+        path="/student/learning-modes/listening-mode"
+        element={
+          <StudentRoute>
+            <StudentLayout>
+              <ListeningModeTopics />
+            </StudentLayout>
+          </StudentRoute>
+        }
+      />  
       <Route
         path="/student/learning-mode/:topicId/:topicName"
         element={
