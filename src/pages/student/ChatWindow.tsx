@@ -1416,7 +1416,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   onClick={() =>
                     toggleAudio(
                       "question-audio",
-                      listeningData.questionTextAudioUrl
+                      listeningData.questionAudioUrl
                     )
                   }
                   className="mt-2 flex items-center gap-2"
