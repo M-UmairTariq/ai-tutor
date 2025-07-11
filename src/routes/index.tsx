@@ -14,6 +14,9 @@ import ContactPage from '@/pages/public/contact';
 import LearningModes from '@/pages/student/learning-modes';
 import StudentDashboard from "@/pages/student/dashboard"
 
+// Teacher Pages
+import TeacherDashboard from '@/pages/teacher/dashboard';
+
 // Auth Pages
 import { AuthLayout } from '@/components/layouts/auth-layout';
 import LoginPage from '@/pages/auth/login';
@@ -66,6 +69,14 @@ const AppRoutes = () => {
           <PublicLayout>
             <ContactPage />
           </PublicLayout>
+        }
+      />
+      <Route
+        path="/teacher"
+        element={
+          <StudentLayout>
+            <TeacherDashboard />
+          </StudentLayout>
         }
       />
       <Route

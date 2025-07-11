@@ -1,354 +1,709 @@
-import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { fetchCourses, fetchAssignments } from '@/redux/slices/coursesSlice';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  BookOpen,
-  Users,
-  FileText,
-  ChevronRight,
-  Plus,
-  Clipboard,
-  Bell,
-} from 'lucide-react';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Search } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowUpRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+const students = [
+  {
+    id: "1",
+    name: "Sarah Johnson",
+    email: "sarah.j@example.com",
+    avatar:
+      "https://images.pexels.com/photos/3586798/pexels-photo-3586798.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    courses: 3,
+    progress: 78,
+    lastActive: "2 hours ago",
+    status: "active",
+    section: "A",
+    performance: "high",
+    ranking: 1,
+    level: 3,
+    activity: "active",
+    contactNumber: "555-1234",
+  },
+  {
+    id: "2",
+    name: "Michael Rodriguez",
+    email: "michael.r@example.com",
+    avatar:
+      "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    courses: 2,
+    progress: 45,
+    lastActive: "1 day ago",
+    status: "active",
+    section: "B",
+    performance: "medium",
+    ranking: 2,
+    level: 2,
+    activity: "active",
+    contactNumber: "555-5678",
+  },
+  {
+    id: "3",
+    name: "Jennifer Lee",
+    email: "jennifer.l@example.com",
+    avatar:
+      "https://images.pexels.com/photos/1987301/pexels-photo-1987301.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    courses: 4,
+    progress: 92,
+    lastActive: "3 hours ago",
+    status: "active",
+    section: "A",
+    performance: "high",
+    ranking: 1,
+    level: 3,
+    activity: "active",
+    contactNumber: "555-8765",
+  },
+  {
+    id: "4",
+    name: "David Wilson",
+    email: "david.w@example.com",
+    avatar: "",
+    courses: 1,
+    progress: 12,
+    lastActive: "5 days ago",
+    status: "suspended",
+    section: "B",
+    performance: "low",
+    ranking: 3,
+    level: 1,
+    activity: "suspended",
+    contactNumber: "555-4321",
+  },
+  {
+    id: "5",
+    name: "Emily Chen",
+    email: "emily.c@example.com",
+    avatar:
+      "https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    courses: 3,
+    progress: 67,
+    lastActive: "12 hours ago",
+    status: "active",
+    section: "A",
+    performance: "medium",
+    ranking: 2,
+    level: 2,
+    activity: "active",
+    contactNumber: "555-2468",
+  },
+  {
+    id: "6",
+    name: "Olivia Taylor",
+    email: "olivia.t@example.com",
+    avatar:
+      "https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    courses: 2,
+    progress: 88,
+    lastActive: "2 days ago",
+    status: "active",
+    section: "B",
+    performance: "high",
+    ranking: 1,
+    level: 3,
+    activity: "active",
+    contactNumber: "555-1357",
+  },
+  {
+    id: "7",
+    name: "James Martin",
+    email: "james.m@example.com",
+    avatar: "",
+    courses: 1,
+    progress: 23,
+    lastActive: "1 week ago",
+    status: "suspended",
+    section: "A",
+    performance: "low",
+    ranking: 3,
+    level: 1,
+    activity: "suspended",
+    contactNumber: "555-9753",
+  },
+  {
+    id: "8",
+    name: "Sarah Johnson",
+    email: "sarah.j@example.com",
+    avatar:
+      "https://images.pexels.com/photos/3586798/pexels-photo-3586798.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    courses: 3,
+    progress: 78,
+    lastActive: "2 hours ago",
+    status: "active",
+    section: "A",
+    performance: "high",
+    ranking: 1,
+    level: 3,
+    activity: "active",
+    contactNumber: "555-1234",
+  },
+  {
+    id: "9",
+    name: "Michael Rodriguez",
+    email: "michael.r@example.com",
+    avatar:
+      "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    courses: 2,
+    progress: 45,
+    lastActive: "1 day ago",
+    status: "active",
+    section: "B",
+    performance: "medium",
+    ranking: 2,
+    level: 2,
+    activity: "active",
+    contactNumber: "555-5678",
+  },
+  {
+    id: "10",
+    name: "Jennifer Lee",
+    email: "jennifer.l@example.com",
+    avatar:
+      "https://images.pexels.com/photos/1987301/pexels-photo-1987301.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    courses: 4,
+    progress: 92,
+    lastActive: "3 hours ago",
+    status: "active",
+    section: "A",
+    performance: "high",
+    ranking: 1,
+    level: 3,
+    activity: "active",
+    contactNumber: "555-8765",
+  },
+  {
+    id: "11",
+    name: "David Wilson",
+    email: "david.w@example.com",
+    avatar: "",
+    courses: 1,
+    progress: 12,
+    lastActive: "5 days ago",
+    status: "suspended",
+    section: "B",
+    performance: "low",
+    ranking: 3,
+    level: 1,
+    activity: "suspended",
+    contactNumber: "555-4321",
+  },
+  {
+    id: "12",
+    name: "Emily Chen",
+    email: "emily.c@example.com",
+    avatar:
+      "https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    courses: 3,
+    progress: 67,
+    lastActive: "12 hours ago",
+    status: "active",
+    section: "A",
+    performance: "medium",
+    ranking: 2,
+    level: 2,
+    activity: "active",
+    contactNumber: "555-2468",
+  },
+  {
+    id: "13",
+    name: "Olivia Taylor",
+    email: "olivia.t@example.com",
+    avatar:
+      "https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    courses: 2,
+    progress: 88,
+    lastActive: "2 days ago",
+    status: "active",
+    section: "B",
+    performance: "high",
+    ranking: 1,
+    level: 3,
+    activity: "active",
+    contactNumber: "555-1357",
+  },
+  {
+    id: "14",
+    name: "James Martin",
+    email: "james.m@example.com",
+    avatar: "",
+    courses: 1,
+    progress: 23,
+    lastActive: "1 week ago",
+    status: "suspended",
+    section: "A",
+    performance: "low",
+    ranking: 3,
+    level: 1,
+    activity: "suspended",
+    contactNumber: "555-9753",
+  },
+];
 
 export default function TeacherDashboard() {
-  const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth);
-  const { courses, assignments, loading } = useAppSelector((state) => state.courses);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sectionFilter, setSectionFilter] = useState("all");
+  const [performanceFilter, setPerformanceFilter] = useState("all");
+  const [rankingFilter, setRankingFilter] = useState("all");
+  const [levelFilter, setLevelFilter] = useState("all");
+  const [activityFilter, setActivityFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
+
+  // Filter students based on search term and filters
+  const filteredStudents = students.filter((student) => {
+    const matchesSearch =
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || student.status === statusFilter;
+    const matchesSection =
+      sectionFilter === "all" || student.section === sectionFilter;
+    const matchesPerformance =
+      performanceFilter === "all" || student.performance === performanceFilter;
+    const matchesRanking =
+      rankingFilter === "all" ||
+      (rankingFilter === "top" && student.ranking === 1) ||
+      (rankingFilter === "average" && student.ranking === 2) ||
+      (rankingFilter === "low" && student.ranking === 3);
+    const matchesLevel =
+      levelFilter === "all" || student.level === Number(levelFilter);
+    const matchesActivity =
+      activityFilter === "all" || student.activity === activityFilter;
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesSection &&
+      matchesPerformance &&
+      matchesRanking &&
+      matchesLevel &&
+      matchesActivity
+    );
+  });
+
+  // Sort students based on the selected sort criteria
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
+    switch (sortBy) {
+      case "name":
+        return a.name.localeCompare(b.name);
+      case "ranking":
+        return a.ranking - b.ranking;
+      case "level":
+        return a.level - b.level;
+      default:
+        return 0;
+    }
+  });
+
+  const totalPages = Math.ceil(sortedStudents.length / pageSize);
+  const paginatedStudents = sortedStudents.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   useEffect(() => {
-    dispatch(fetchCourses());
-    dispatch(fetchAssignments());
-  }, [dispatch]);
+    setCurrentPage(1);
+  }, [
+    searchTerm,
+    statusFilter,
+    sectionFilter,
+    performanceFilter,
+    rankingFilter,
+    levelFilter,
+    activityFilter,
+    sortBy,
+  ]);
 
-  // Generate some dummy stats for the teacher
-  const totalStudents = courses.reduce((sum, course) => sum + (course.students || 0), 0);
-  const pendingReviews = 7; // Mock data
-  const averageRating = 4.8; // Mock data
+  const getStatusBadge = (status: string) => {
+    const baseClass =
+      "bg-opacity-100 text-opacity-100 font-medium px-3 py-1 rounded-md pointer-events-none select-none";
 
-  // Format date to be more readable
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
+    switch (status) {
+      case "active":
+        return (
+          <Badge className={`bg-green-100 text-green-700 ${baseClass}`}>
+            Active
+          </Badge>
+        );
+      case "suspended":
+        return (
+          <Badge className={`bg-red-100 text-red-600 ${baseClass}`}>
+            Suspended
+          </Badge>
+        );
+      case "inactive":
+        return (
+          <Badge className={`bg-gray-200 text-gray-700 ${baseClass}`}>
+            Inactive
+          </Badge>
+        );
+      default:
+        return (
+          <Badge className={`bg-gray-300 text-gray-800 ${baseClass}`}>
+            Unknown
+          </Badge>
+        );
+    }
+  };
+
+  const applyFilters = () => {
+    // this isn't functional yet
   };
 
   return (
     <div>
-      {/* Welcome Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[var(--font-dark)]">
-          Welcome back, {user?.username?.split(' ')[0] || 'Teacher'}
-        </h1>
-        <p className="text-[var(--font-light2)]">
-          Here's an overview of your courses and teaching metrics.
-        </p>
+      {/* Filters and Search */}
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        <div className="flex justify-between items-center w-full flex-wrap gap-4">
+          {/* Filter Buttons */}
+          <div className="flex gap-2 flex-wrap w-full sm:w-auto">
+            <Button
+              variant={statusFilter === "all" ? "default" : "outline"}
+              onClick={() => setStatusFilter("all")}
+            >
+              All
+            </Button>
+            <Button
+              variant={statusFilter === "suspended" ? "default" : "outline"}
+              onClick={() => setStatusFilter("suspended")}
+            >
+              Suspended
+            </Button>
+            <Button
+              variant={statusFilter === "inactive" ? "default" : "outline"}
+              onClick={() => setStatusFilter("inactive")}
+            >
+              Inactive
+            </Button>
+            <Button
+              variant={statusFilter === "active" ? "default" : "outline"}
+              onClick={() => setStatusFilter("active")}
+            >
+              Active
+            </Button>
+          </div>
+
+          {/* Search and Sort */}
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+            <div className="relative w-full sm:w-48">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--font-light2)]" />
+              <Input
+                className="pl-9 w-full"
+                placeholder="Search by name"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="ranking">Ranking</SelectItem>
+                <SelectItem value="level">Level</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-start gap-2 w-full">
+          <div className="flex flex-wrap gap-2 flex-1">
+            <Select value={sectionFilter} onValueChange={setSectionFilter}>
+              <SelectTrigger className="flex-1 min-w-[140px]">
+                <SelectValue placeholder="All Sections" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sections</SelectItem>
+                <SelectItem value="A">Section A</SelectItem>
+                <SelectItem value="B">Section B</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={performanceFilter}
+              onValueChange={setPerformanceFilter}
+            >
+              <SelectTrigger className="flex-1 min-w-[140px]">
+                <SelectValue placeholder="Performance" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Performance</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={rankingFilter} onValueChange={setRankingFilter}>
+              <SelectTrigger className="flex-1 min-w-[140px]">
+                <SelectValue placeholder="Ranking" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Rankings</SelectItem>
+                <SelectItem value="top">Top</SelectItem>
+                <SelectItem value="average">Average</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={levelFilter} onValueChange={setLevelFilter}>
+              <SelectTrigger className="flex-1 min-w-[140px]">
+                <SelectValue placeholder="Level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Levels</SelectItem>
+                <SelectItem value="1">Level 1</SelectItem>
+                <SelectItem value="2">Level 2</SelectItem>
+                <SelectItem value="3">Level 3</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={activityFilter} onValueChange={setActivityFilter}>
+              <SelectTrigger className="flex-1 min-w-[140px]">
+                <SelectValue placeholder="Activity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Activity</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Apply Filter Button */}
+          <Button
+            className="bg-[#F1F3FF] text-primary hover:bg-primary hover:text-white hover:shadow-md transition-colors w-full sm:w-auto"
+            onClick={applyFilters}
+          >
+            Apply Filter
+          </Button>
+        </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[var(--font-light2)] text-sm">Active Courses</p>
-                <h3 className="text-3xl font-bold text-[var(--font-dark)]">
-                  {courses.length}
-                </h3>
-              </div>
-              <div className="rounded-full w-12 h-12 flex items-center justify-center bg-[var(--primarybg)]/10">
-                <BookOpen className="h-6 w-6 text-[var(--primarybg)]" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Students Table */}
+      <Card>
+        <CardContent>
+          {/* Responsive Table */}
+          <div className="hidden sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead className="text-center">Email Address</TableHead>
+                  <TableHead className="text-center">Contact Number</TableHead>
+                  <TableHead className="text-center">Section</TableHead>
+                  <TableHead className="text-center">Level</TableHead>
+                  <TableHead className="text-center">Ranking</TableHead>
+                  <TableHead className="text-center">Account Status</TableHead>
+                  <TableHead className="!pl-8 text-center">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedStudents.length > 0 ? (
+                  paginatedStudents.map((student) => (
+                    <TableRow className="h-20" key={student.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage
+                              src={student.avatar}
+                              alt={student.name}
+                            />
+                            <AvatarFallback>
+                              {student.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{student.name}</div>
+                            <div className="text-sm text-[var(--font-light2)]">
+                              <a
+                                href={`/profile/${student.id}`}
+                                className="text-blue-500 flex items-center gap-1"
+                              >
+                                View Profile{" "}
+                                <ArrowUpRight className="w-4 h-4 text-blue-500" />
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {student.email}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {student.contactNumber}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {student.section}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {student.level}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="font-bold">{student.ranking}</span>
+                        <span className="text-xs">/20</span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {getStatusBadge(student.status)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          className="bg-[#F1F3FF] text-primary hover:bg-primary hover:text-white hover:shadow-md transition-colors"
+                          size="sm"
+                        >
+                          Assign Task
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-6">
+                      <p className="text-[var(--font-light2)] mb-2">
+                        No students found matching your criteria.
+                      </p>
+                      {searchTerm && (
+                        <Button
+                          onClick={() => setSearchTerm("")}
+                          variant="outline"
+                        >
+                          Clear Search
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[var(--font-light2)] text-sm">Total Students</p>
-                <h3 className="text-3xl font-bold text-[var(--font-dark)]">
-                  {totalStudents}
-                </h3>
-              </div>
-              <div className="rounded-full w-12 h-12 flex items-center justify-center bg-[var(--primarybg)]/10">
-                <Users className="h-6 w-6 text-[var(--primarybg)]" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[var(--font-light2)] text-sm">Pending Reviews</p>
-                <h3 className="text-3xl font-bold text-[var(--font-dark)]">
-                  {pendingReviews}
-                </h3>
-              </div>
-              <div className="rounded-full w-12 h-12 flex items-center justify-center bg-[var(--primarybg)]/10">
-                <Clipboard className="h-6 w-6 text-[var(--primarybg)]" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[var(--font-light2)] text-sm">Instructor Rating</p>
-                <h3 className="text-3xl font-bold text-[var(--font-dark)]">
-                  {averageRating}
-                </h3>
-              </div>
-              <div className="rounded-full w-12 h-12 flex items-center justify-center bg-[var(--primarybg)]/10">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-[var(--primarybg)]"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
+          {/* Card Layout for Mobile */}
+          <div className="block sm:hidden">
+            {paginatedStudents.length > 0 ? (
+              paginatedStudents.map((student) => (
+                <div
+                  key={student.id}
+                  className="border rounded-lg p-4 mt-4 mb-4 shadow-sm"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Courses and Notifications */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Courses */}
-        <div className="lg:col-span-2">
-          <Card className="h-full">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-xl font-bold">Your Courses</CardTitle>
-                <div className="flex gap-2">
-                  <Link to="/teacher/courses">
-                    <Button variant="ghost" size="sm" className="gap-1">
-                      View all <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link to="/teacher/courses/new">
-                    <Button size="sm" className="gap-1 bg-[var(--primarybg)] hover:bg-[var(--primarybg)]/90">
-                      <Plus className="h-4 w-4" /> New Course
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center p-6">
-                  <div className="animate-pulse text-[var(--font-light2)]">Loading courses...</div>
-                </div>
-              ) : courses.length > 0 ? (
-                <div className="space-y-6">
-                  {courses.slice(0, 3).map((course) => (
-                    <div key={course.id} className="flex space-x-4">
-                      <img
-                        src={course.thumbnail}
-                        alt={course.title}
-                        className="w-20 h-20 object-cover rounded-md"
-                      />
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-semibold text-[var(--font-dark)]">
-                            {course.title}
-                          </h3>
-                          <Badge variant="outline">{course.students} Students</Badge>
-                        </div>
-                        <p className="text-sm text-[var(--font-light2)] mb-2">
-                          {course.description.substring(0, 80)}...
-                        </p>
-                        <div className="flex justify-end">
-                          <Link to={`/teacher/courses/${course.id}`}>
-                            <Button size="sm" variant="outline">
-                              Manage Course
-                            </Button>
-                          </Link>
-                        </div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Avatar>
+                      <AvatarImage src={student.avatar} alt={student.name} />
+                      <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{student.name}</div>
+                      <div className="text-sm text-[var(--font-light2)]">
+                        <a
+                          href={`/profile/${student.id}`}
+                          className="text-blue-500 flex items-center gap-1"
+                        >
+                          View Profile{" "}
+                          <ArrowUpRight className="w-4 h-4 text-blue-500" />
+                        </a>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                  <div className="text-sm">
+                    <p>
+                      <strong>Email:</strong> {student.email}
+                    </p>
+                    <p>
+                      <strong>Contact:</strong> {student.contactNumber}
+                    </p>
+                    <p>
+                      <strong>Section:</strong> {student.section}
+                    </p>
+                    <p>
+                      <strong>Level:</strong> {student.level}
+                    </p>
+                    <p>
+                      <strong>Ranking:</strong> {student.ranking}/20
+                    </p>
+                    <p>
+                      <strong>Status:</strong> {getStatusBadge(student.status)}
+                    </p>
+                  </div>
+                  <Button
+                    className="bg-[#F1F3FF] text-primary hover:bg-primary hover:text-white hover:shadow-md transition-colors mt-2"
+                    size="sm"
+                  >
+                    Assign Task
+                  </Button>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-[var(--font-light2)] mb-4">
-                    You haven't created any courses yet.
-                  </p>
-                  <Link to="/teacher/courses/new">
-                    <Button className="bg-[var(--primarybg)] hover:bg-[var(--primarybg)]/90">
-                      Create Your First Course
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Notifications & To-Do */}
-        <div>
-          <Card className="h-full">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-xl font-bold">Recent Activity</CardTitle>
-                <Button variant="ghost" size="sm" className="gap-1">
-                  <Bell className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4 py-1">
-                  <div className="font-medium">New student enrolled</div>
-                  <div className="text-sm text-[var(--font-light2)]">
-                    Sarah Johnson joined "Web Development Masterclass"
-                  </div>
-                  <div className="text-xs text-[var(--font-light2)]">2 hours ago</div>
-                </div>
-                
-                <div className="border-l-4 border-green-500 pl-4 py-1">
-                  <div className="font-medium">Assignment submissions</div>
-                  <div className="text-sm text-[var(--font-light2)]">
-                    5 new submissions for "JavaScript Basics Quiz"
-                  </div>
-                  <div className="text-xs text-[var(--font-light2)]">Yesterday</div>
-                </div>
-                
-                <div className="border-l-4 border-yellow-500 pl-4 py-1">
-                  <div className="font-medium">Course feedback</div>
-                  <div className="text-sm text-[var(--font-light2)]">
-                    New review for "Advanced Data Structures"
-                  </div>
-                  <div className="text-xs text-[var(--font-light2)]">2 days ago</div>
-                </div>
-                
-                <div className="border-l-4 border-purple-500 pl-4 py-1">
-                  <div className="font-medium">Course milestone</div>
-                  <div className="text-sm text-[var(--font-light2)]">
-                    "Introduction to Programming" reached 30 students
-                  </div>
-                  <div className="text-xs text-[var(--font-light2)]">3 days ago</div>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="font-semibold mb-3">To-Do List</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 mr-2 rounded border-gray-300"
-                    />
-                    <span className="text-sm">Review 5 pending assignments</span>
-                  </div>
-                  <div className="flex items-center">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 mr-2 rounded border-gray-300"
-                    />
-                    <span className="text-sm">Update course materials for Week 3</span>
-                  </div>
-                  <div className="flex items-center">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 mr-2 rounded border-gray-300"
-                    />
-                    <span className="text-sm">Respond to student questions (3)</span>
-                  </div>
-                  <div className="flex items-center">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 mr-2 rounded border-gray-300"
-                    />
-                    <span className="text-sm">Create new assignment for Data Structures</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Recent Assignments */}
-      <div className="mt-8">
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-xl font-bold">Recent Assignments</CardTitle>
-              <Link to="/teacher/assignments">
-                <Button variant="ghost" size="sm" className="gap-1">
-                  View all <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center p-6">
-                <div className="animate-pulse text-[var(--font-light2)]">Loading assignments...</div>
-              </div>
+              ))
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left pb-3 font-medium text-[var(--font-light2)]">Assignment</th>
-                      <th className="text-left pb-3 font-medium text-[var(--font-light2)]">Course</th>
-                      <th className="text-left pb-3 font-medium text-[var(--font-light2)]">Due Date</th>
-                      <th className="text-left pb-3 font-medium text-[var(--font-light2)]">Submissions</th>
-                      <th className="text-right pb-3 font-medium text-[var(--font-light2)]">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assignments.slice(0, 5).map((assignment) => {
-                      const course = courses.find((c) => c.id === assignment.courseId);
-                      return (
-                        <tr key={assignment.id} className="border-b">
-                          <td className="py-3">
-                            <div className="font-medium">{assignment.title}</div>
-                          </td>
-                          <td className="py-3">
-                            <div className="text-sm">{course?.title || 'Unknown Course'}</div>
-                          </td>
-                          <td className="py-3">
-                            <div className="text-sm">{formatDate(assignment.dueDate)}</div>
-                          </td>
-                          <td className="py-3">
-                            <Badge variant="outline">7/{course?.students || 0}</Badge>
-                          </td>
-                          <td className="py-3 text-right">
-                            <Button size="sm" variant="ghost">
-                              <FileText className="h-4 w-4 mr-2" /> View
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <p className="text-center text-[var(--font-light2)]">
+                No students found matching your criteria.
+              </p>
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex flex-wrap justify-between items-center mt-4 gap-2">
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex gap-2 items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              {/* Page numbers */}
+              {Array.from({ length: totalPages }, (_, i) => (
+                <Button
+                  key={i + 1}
+                  variant={currentPage === i + 1 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={currentPage === i + 1 ? "font-bold" : ""}
+                >
+                  {i + 1}
+                </Button>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
