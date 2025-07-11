@@ -94,6 +94,7 @@ const ChatEvents = {
   SUBMIT_MCQS: "submit_mcqs",
   MCQ_RESULT: "mcq_result",
   CONTENT_PAYLOAD: "content_payload",
+  NEXT_STAGE: "next_stage",
 } as const;
 
 interface ServerToClientEvents {
@@ -144,6 +145,11 @@ interface ServerToClientEvents {
       contentAudioUrl: string;
     };
   }) => void;
+  next_stage: (payload: {
+    userId: string;
+    topicId: string;
+    chatId: string | null;
+  }) => void;
 }
 
 interface ClientToServerEvents {
@@ -180,6 +186,11 @@ interface ClientToServerEvents {
     userId: string;
     topicId: string;
     chatId: string;
+  }) => void;
+  [ChatEvents.NEXT_STAGE]: (payload: {
+    userId: string;
+    topicId: string;
+    chatId: string | null;
   }) => void;
 }
 
@@ -254,6 +265,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     pointValue: number;
   } | null>(null);
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
+
+  // --- Listening Mode State ---
+  const [listeningStage, setListeningStage] = useState<string | null>(null);
+  const [listeningData, setListeningData] = useState<any>(null);
+  const [currentMcqIndex, setCurrentMcqIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [showReplayPopup, setShowReplayPopup] = useState(false);
+  const [mcqAnswers, setMcqAnswers] = useState<{ [key: string]: number }>({});
+  // --- End Listening Mode State ---
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -446,8 +466,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       toast.error(`Connection failed: ${err.message}`);
     });
 
-    socket.on(ChatEvents.CHAT_HISTORY, (payload) => {
+    socket.on(ChatEvents.CHAT_HISTORY, (payload: any) => {
       logger.receiving(ChatEvents.CHAT_HISTORY, payload);
+
+      if (mode === "listening-mode") {
+        const { chatId: newChatId, ...data } = payload;
+        setChatId(newChatId);
+        setListeningData(data);
+
+        let currentStage: string | null = null;
+        if (data.narrationText) {
+          currentStage = "initial";
+        } else if (data.questionText) {
+          currentStage = "question_text";
+        } else if (data.mcqs) {
+          currentStage = "quiz";
+          setMcqList(data.mcqs);
+          setCurrentMcqIndex(0); // Reset to first question
+        }
+
+        setListeningStage(currentStage);
+        logger.info(`Listening mode stage inferred: ${currentStage}`, data);
+        return;
+      }
+
       const { chatHistory, chatId: newChatId } = payload;
       const formatted = chatHistory.map((msg: any) => ({
         id: msg.id,
@@ -600,27 +642,34 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         setMcqList(payload.questions);
         setChatId(payload.chatId);
         setIsQuestionnaireOpen(true);
+      } else if (mode === "listening-mode" && payload.mcqs) {
+        setListeningStage("quiz");
+        setMcqList(payload.mcqs);
+        setChatId(payload.chatId);
+        setListeningData((prevData: any) => ({ ...prevData, ...payload }));
+        setCurrentMcqIndex(0);
       }
     });
 
     socket.on(ChatEvents.MCQ_RESULT, (payload) => {
       logger.receiving(ChatEvents.MCQ_RESULT, payload);
-      console.log("Received MCQ RESULT:", payload);
-
       const { correctCount, required, message } = payload;
       const isSuccess = correctCount >= required;
 
-      // Show toast notification
-      if (isSuccess) {
-        toast.success("🎉 Quiz Passed!", {
-          description: `Great job! You got ${correctCount} correct answers.`,
-          duration: 4000,
-        });
-      } else {
-        toast.error("❌ Try Again", {
-          description: message,
-          duration: 4000,
-        });
+      // Existing logic for other modes (e.g., reading-mode)
+      // The listening-mode quiz is now handled entirely on the frontend.
+      if (mode !== "listening-mode") {
+        if (isSuccess) {
+          toast.success("🎉 Quiz Passed!", {
+            description: `Great job! You got ${correctCount} correct answers.`,
+            duration: 4000,
+          });
+        } else {
+          toast.error("❌ Try Again", {
+            description: message,
+            duration: 4000,
+          });
+        }
       }
     });
 
@@ -859,6 +908,69 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  const submitFinalAnswers = (finalAnswers: { [key: string]: number }) => {
+    if (!socketRef.current || !chatId) {
+      toast.error("Connection issue, cannot submit final answers.");
+      return;
+    }
+
+    const answers: McqAnswer[] = Object.entries(finalAnswers).map(
+      ([questionId, answerIndex]) => ({
+        questionId,
+        answerIndex,
+      })
+    );
+
+    const payload = { chatId, answers };
+    logger.emitting(ChatEvents.SUBMIT_MCQS, payload);
+    socketRef.current.emit(ChatEvents.SUBMIT_MCQS, payload);
+  };
+
+  const handleSubmitAnswer = () => {
+    if (selectedAnswer === null) {
+      toast.warning("Please select an answer.");
+      return;
+    }
+    const currentQuestion = mcqList[currentMcqIndex];
+    if (!currentQuestion) {
+      toast.error("An error occurred. Could not find current question.");
+      return;
+    }
+
+    const isCorrect = selectedAnswer === currentQuestion.correct;
+
+    if (isCorrect) {
+      toast.success("Correct!", { duration: 2000 });
+      const newAnswers = {
+        ...mcqAnswers,
+        [currentQuestion.id]: selectedAnswer,
+      };
+      setMcqAnswers(newAnswers);
+      setSelectedAnswer(null);
+
+      // move to next question or finish
+      if (currentMcqIndex < mcqList.length - 1) {
+        setCurrentMcqIndex(currentMcqIndex + 1);
+      } else {
+        // Last question answered correctly
+        submitFinalAnswers(newAnswers);
+        toast.success("🎉 Listening practice completed!", {
+          description: "Great job!",
+          duration: 4000,
+        });
+        setChatCompleted(true);
+        setIsCompleteDialogOpen(true);
+      }
+    } else {
+      // incorrect answer
+      toast.error("Not quite, try again!", {
+        description: "Listen to the audio again for a hint.",
+        duration: 3000,
+      });
+      setShowReplayPopup(true);
+    }
+  };
+
   const handleQuestionnaireSubmit = (answers: {
     [questionId: string]: number;
   }) => {
@@ -1079,12 +1191,70 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       html5: true,
       onplay: () => setPlayingAudioId(id),
       onend: () => setPlayingAudioId(null),
+      onplayerror: (soundId: number, error: any) => {
+        logger.error("Howler play error:", { soundId, error });
+        toast.error("Could not play audio.");
+        setPlayingAudioId(null);
+      },
     });
 
     sound.play();
     soundRef.current = sound;
   };
   // --- END MODIFICATION
+
+  const handleNextStage = () => {
+    if (socketRef.current && userId && topicId && chatId) {
+      const payload = { userId, topicId, chatId };
+      logger.emitting(ChatEvents.NEXT_STAGE, payload);
+      socketRef.current.emit(ChatEvents.NEXT_STAGE, payload);
+
+      // If we are on the hint screen, we wait for the MCQ_LIST event.
+      // Otherwise, we reload to get the next stage (the hint screen).
+      if (listeningStage === "question_text") {
+        toast.info("Loading quiz...");
+      } else {
+        toast.info("Loading next part...");
+        setTimeout(() => {
+          window.location.reload();
+        }, 500); // Small delay to ensure event is sent
+      }
+    } else {
+      toast.error("Cannot proceed to next stage. Connection issue.");
+      logger.error("Could not emit next_stage", {
+        socket: !!socketRef.current,
+        userId,
+        topicId,
+        chatId,
+      });
+    }
+  };
+
+  const handleSingleMcqSubmit = () => {
+    if (selectedAnswer === null) {
+      toast.warning("Please select an answer.");
+      return;
+    }
+    if (!socketRef.current || !chatId) {
+      toast.error("Connection issue, cannot submit answer.");
+      return;
+    }
+
+    const currentQuestion = mcqList[currentMcqIndex];
+    if (!currentQuestion) {
+      toast.error("Could not find the current question.");
+      return;
+    }
+
+    const answer: McqAnswer = {
+      questionId: currentQuestion.id,
+      answerIndex: selectedAnswer,
+    };
+
+    const payload = { chatId, answers: [answer] };
+    logger.emitting(ChatEvents.SUBMIT_MCQS, payload);
+    socketRef.current.emit(ChatEvents.SUBMIT_MCQS, payload);
+  };
 
   // All other handlers like handleResetChat, handleStillThere, handleShowAssessment remain the same
   const handleResetChat = () => {
@@ -1149,6 +1319,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             ? "Reading Mode"
             : mode === "roleplay-mode"
             ? "Roleplay Mode"
+            : mode === "listening-mode"
+            ? "Listening Mode"
             : "Chat Mode"}
         </h2>
         <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -1181,6 +1353,151 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       )}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+        {mode === "listening-mode" && listeningStage && listeningData ? (
+          <div className="p-6 rounded-lg shadow-sm bg-white border border-gray-200 flex flex-col items-center text-center gap-4">
+            {listeningStage !== "quiz" && listeningData.kbAudioUrl && (
+              <div className="w-full p-3 bg-gray-50 rounded-md border">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    toggleAudio("kb-audio", listeningData.kbAudioUrl)
+                  }
+                  className="flex items-center gap-2"
+                >
+                  {playingAudioId === "kb-audio" ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                  <span>Context Audio</span>
+                </Button>
+              </div>
+            )}
+
+            {listeningStage === "initial" && (
+              <>
+                <h3 className="text-2xl font-bold text-primary">
+                  Round 1: Narration
+                </h3>
+                <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap max-w-2xl">
+                  {listeningData.narrationText}
+                </p>
+                <Button
+                  size="lg"
+                  onClick={() =>
+                    toggleAudio(
+                      "narration-audio",
+                      listeningData.narrationAudioUrl
+                    )
+                  }
+                  className="mt-2 flex items-center gap-2"
+                >
+                  {playingAudioId === "narration-audio" ? (
+                    <Pause className="h-5 w-5" />
+                  ) : (
+                    <Play className="h-5 w-5" />
+                  )}
+                  <span>Play Narration</span>
+                </Button>
+              </>
+            )}
+
+            {listeningStage === "question_text" && (
+              <>
+                <h3 className="text-2xl font-bold text-primary">
+                  Round 2: What to Listen For
+                </h3>
+                <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap max-w-2xl">
+                  {listeningData.questionText}
+                </p>
+                <Button
+                  size="lg"
+                  onClick={() =>
+                    toggleAudio(
+                      "question-audio",
+                      listeningData.questionTextAudioUrl
+                    )
+                  }
+                  className="mt-2 flex items-center gap-2"
+                >
+                  {playingAudioId === "question-audio" ? (
+                    <Pause className="h-5 w-5" />
+                  ) : (
+                    <Play className="h-5 w-5" />
+                  )}
+                  <span>Play Question</span>
+                </Button>
+              </>
+            )}
+            {listeningStage === "quiz" && mcqList.length > 0 && (
+              <div className="w-full flex flex-col items-center gap-4">
+                <h3 className="text-2xl font-bold text-primary">
+                  Round 3: Q&A ({currentMcqIndex + 1} / {mcqList.length})
+                </h3>
+                {listeningData.kbAudioUrl && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      {
+                        console.log(
+                          "toggleAudio LISTENDING DATA",
+                          "kb-audio",
+                          listeningData,
+                        );
+                        toggleAudio("kb-audio", listeningData.kbAudioUrl);
+                      }}
+                    className="flex items-center gap-2"
+                  >
+                    {playingAudioId === "kb-audio" ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                    <span>Play Narration Again</span>
+                  </Button>
+                )}
+                <div className="p-4 border-t border-b w-full my-4 text-left">
+                  <p className="text-lg font-semibold mb-4">
+                    {mcqList[currentMcqIndex].question}
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {mcqList[currentMcqIndex].options.map(
+                      (option: string, index: number) => (
+                        <Button
+                          key={index}
+                          variant={
+                            selectedAnswer === index ? "default" : "outline"
+                          }
+                          onClick={() => setSelectedAnswer(index)}
+                          className="w-full justify-start p-4 h-auto"
+                        >
+                          <div
+                            className={`w-5 h-5 mr-4 rounded-full border border-primary flex-shrink-0 ${
+                              selectedAnswer === index ? "bg-primary" : ""
+                            }`}
+                          />
+                          <span>{option}</span>
+                        </Button>
+                      )
+                    )}
+                  </div>
+                </div>
+                <Button onClick={handleSubmitAnswer} size="lg">
+                  Submit Answer
+                </Button>
+              </div>
+            )}
+
+            {(listeningStage === "initial" ||
+              listeningStage === "question_text") && (
+              <Button onClick={handleNextStage} className="mt-6">
+                Next Step
+              </Button>
+            )}
+          </div>
+        ) : null}
         {contentPayload && (
           <div className="p-4 rounded-lg shadow-sm bg-white border border-gray-200">
             <p
@@ -1362,70 +1679,72 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="border-t p-4 bg-gray-50">
-        <div className="flex items-center bg-white rounded-full px-4 py-1 shadow-sm">
-          <Input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder={
-              isRecording
-                ? `Recording... ${formatTime(recordTime)}`
-                : "Write a message or press mic..."
-            }
-            disabled={
-              isRecording ||
-              chatCompleted ||
-              _sessionLimitReached ||
-              !isSocketConnected
-            }
-            className="flex-1 border-none focus:ring-0 bg-transparent"
-          />
-          {isRecording ? (
-            <div className="flex items-center gap-1">
+      {mode !== "listening-mode" && (
+        <form onSubmit={handleSubmit} className="border-t p-4 bg-gray-50">
+          <div className="flex items-center bg-white rounded-full px-4 py-1 shadow-sm">
+            <Input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={
+                isRecording
+                  ? `Recording... ${formatTime(recordTime)}`
+                  : "Write a message or press mic..."
+              }
+              disabled={
+                isRecording ||
+                chatCompleted ||
+                _sessionLimitReached ||
+                !isSocketConnected
+              }
+              className="flex-1 border-none focus:ring-0 bg-transparent"
+            />
+            {isRecording ? (
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => stopRecording(true)}
+                  className="text-red-500 hover:bg-red-100 rounded-full"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => stopRecording(false)}
+                  className="text-green-500 hover:bg-green-100 rounded-full"
+                >
+                  <ArrowUp className="h-5 w-5" />
+                </Button>
+              </div>
+            ) : message.trim() ? (
+              <Button
+                type="submit"
+                variant="ghost"
+                size="icon"
+                className="text-primary"
+                disabled={!isSocketConnected || chatCompleted}
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            ) : (
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => stopRecording(true)}
-                className="text-red-500 hover:bg-red-100 rounded-full"
+                className="text-primary"
+                onClick={startRecording}
+                disabled={!isSocketConnected || chatCompleted}
               >
-                <X className="h-5 w-5" />
+                <Mic className="h-5 w-5" />
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => stopRecording(false)}
-                className="text-green-500 hover:bg-green-100 rounded-full"
-              >
-                <ArrowUp className="h-5 w-5" />
-              </Button>
-            </div>
-          ) : message.trim() ? (
-            <Button
-              type="submit"
-              variant="ghost"
-              size="icon"
-              className="text-primary"
-              disabled={!isSocketConnected || chatCompleted}
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-primary"
-              onClick={startRecording}
-              disabled={!isSocketConnected || chatCompleted}
-            >
-              <Mic className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
-      </form>
+            )}
+          </div>
+        </form>
+      )}
 
       {/* --- All Dialogs remain unchanged --- */}
       <Dialog
@@ -1434,16 +1753,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Chat Completed</DialogTitle>
+            <DialogTitle>
+              {mode === "listening-mode"
+                ? "Practice Complete"
+                : "Chat Completed"}
+            </DialogTitle>
             <DialogDescription>
-              This conversation has ended. Would you like to start over?
+              {mode === "listening-mode"
+                ? "Great job! You've successfully completed the listening exercise."
+                : "This conversation has ended. Would you like to start over?"}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => navigate(-1)}>
               End Session
             </Button>
-            <Button onClick={handleResetChat}>Reset Chat</Button>
+            {mode !== "listening-mode" && (
+              <Button onClick={handleResetChat}>Reset Chat</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1465,6 +1792,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </Button>
             <Button onClick={() => handleStillThere(true)}>
               Yes, I'm Here
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showReplayPopup} onOpenChange={setShowReplayPopup}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>That's not quite right</DialogTitle>
+            <DialogDescription>
+              Would you like to listen to the audio again for a hint before you
+              try again?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-center">
+            <Button
+              variant="outline"
+              onClick={() => setShowReplayPopup(false)}
+            >
+              Try Again
+            </Button>
+            <Button
+              onClick={() => {
+                if (listeningData?.kbAudioUrl) {
+                  toggleAudio("kb-audio-replay", listeningData.kbAudioUrl);
+                }
+                setShowReplayPopup(false);
+              }}
+            >
+              Replay Audio
             </Button>
           </DialogFooter>
         </DialogContent>
