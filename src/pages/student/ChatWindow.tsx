@@ -1230,31 +1230,31 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  const handleSingleMcqSubmit = () => {
-    if (selectedAnswer === null) {
-      toast.warning("Please select an answer.");
-      return;
-    }
-    if (!socketRef.current || !chatId) {
-      toast.error("Connection issue, cannot submit answer.");
-      return;
-    }
+  // const handleSingleMcqSubmit = () => {
+  //   if (selectedAnswer === null) {
+  //     toast.warning("Please select an answer.");
+  //     return;
+  //   }
+  //   if (!socketRef.current || !chatId) {
+  //     toast.error("Connection issue, cannot submit answer.");
+  //     return;
+  //   }
 
-    const currentQuestion = mcqList[currentMcqIndex];
-    if (!currentQuestion) {
-      toast.error("Could not find the current question.");
-      return;
-    }
+  //   const currentQuestion = mcqList[currentMcqIndex];
+  //   if (!currentQuestion) {
+  //     toast.error("Could not find the current question.");
+  //     return;
+  //   }
 
-    const answer: McqAnswer = {
-      questionId: currentQuestion.id,
-      answerIndex: selectedAnswer,
-    };
+  //   const answer: McqAnswer = {
+  //     questionId: currentQuestion.id,
+  //     answerIndex: selectedAnswer,
+  //   };
 
-    const payload = { chatId, answers: [answer] };
-    logger.emitting(ChatEvents.SUBMIT_MCQS, payload);
-    socketRef.current.emit(ChatEvents.SUBMIT_MCQS, payload);
-  };
+  //   const payload = { chatId, answers: [answer] };
+  //   logger.emitting(ChatEvents.SUBMIT_MCQS, payload);
+  //   socketRef.current.emit(ChatEvents.SUBMIT_MCQS, payload);
+  // };
 
   // All other handlers like handleResetChat, handleStillThere, handleShowAssessment remain the same
   const handleResetChat = () => {
