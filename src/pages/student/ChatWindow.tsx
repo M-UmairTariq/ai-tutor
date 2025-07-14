@@ -275,6 +275,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [mcqAnswers, setMcqAnswers] = useState<{ [key: string]: number }>({});
   // --- End Listening Mode State ---
 
+  // Add new states for audio completion tracking
+  const [hasCompletedNarration, setHasCompletedNarration] = useState(false);
+  const [hasCompletedQuestion, setHasCompletedQuestion] = useState(false);
+  const [hasAutoplayedStage, setHasAutoplayedStage] = useState<string | null>(null);
+
   const socketRef = useRef<Socket<
     ServerToClientEvents,
     ClientToServerEvents
@@ -311,52 +316,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     (navigator.userAgent.includes("Mac") && "ontouchend" in document);
 
   // --- MODIFIED: Universal Audio Unlocker ---
-  // This function sets up a one-time event listener to unlock audio on the first user interaction.
-  // const unlockAudio = useCallback(() => {
-  //   if (isAudioUnlocked) return;
-
-  //   const unlock = () => {
-  //     Howler.ctx.resume().then(() => {
-  //       logger.info("Audio context unlocked successfully by user gesture.");
-  //       setIsAudioUnlocked(true);
-  //       document.removeEventListener("touchstart", unlock, true);
-  //       document.removeEventListener("touchend", unlock, true);
-  //       document.removeEventListener("click", unlock, true);
-  //     });
-  //   };
-
-  //   logger.info("Setting up audio unlock listeners...");
-  //   document.addEventListener("touchstart", unlock, true);
-  //   document.addEventListener("touchend", unlock, true);
-  //   document.addEventListener("click", unlock, true);
-
-  //   // Cleanup function to remove listeners if the component unmounts
-  //   return () => {
-  //     document.removeEventListener("touchstart", unlock, true);
-  //     document.removeEventListener("touchend", unlock, true);
-  //     document.removeEventListener("click", unlock, true);
-  //   };
-  // }, [isAudioUnlocked]);
-  // --- CORRECTED: Universal Audio Unlocker ---
   const unlockAudio = useCallback(() => {
     if (isAudioUnlocked) return;
 
     const unlock = () => {
-      // --- THE FIX IS HERE ---
-      // First, check if the Howler context exists and if it's not already running.
-      // This prevents the "Cannot read properties of null" error.
       if (Howler.ctx && Howler.ctx.state !== "running") {
         Howler.ctx.resume().then(() => {
           logger.info("Audio context unlocked successfully by user gesture.");
           setIsAudioUnlocked(true);
-          // It's crucial to remove the listeners after a successful unlock.
           document.removeEventListener("touchstart", unlock, true);
           document.removeEventListener("touchend", unlock, true);
           document.removeEventListener("click", unlock, true);
         });
       } else {
-        // If the context doesn't exist yet or is already running, we don't need to do anything.
-        // We can consider the audio "unlocked" for our app's logic and clean up the listeners.
         setIsAudioUnlocked(true);
         document.removeEventListener("touchstart", unlock, true);
         document.removeEventListener("touchend", unlock, true);
@@ -369,7 +341,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     document.addEventListener("touchend", unlock, true);
     document.addEventListener("click", unlock, true);
 
-    // Cleanup function to remove listeners if the component unmounts before unlock
     return () => {
       document.removeEventListener("touchstart", unlock, true);
       document.removeEventListener("touchend", unlock, true);
@@ -398,7 +369,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const lastRecordingEndTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // This entire useEffect for socket connection remains largely the same
     if (!userId) {
       toast.error("User information is missing.");
       logger.error("User ID is missing, cannot establish connection.");
@@ -436,27 +406,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       resetActivityTimer();
     });
-    // ... all your other socket.on listeners remain unchanged ...
-    // In your main useEffect for the socket...
 
     socket.on("disconnect", (reason: Socket.DisconnectReason) => {
       logger.error(`Socket disconnected. Reason: ${reason}`);
       setIsSocketConnected(false);
 
-      // Case 1: An unexpected network issue occurred.
-      // This is the ONLY case where we should show a "Connection lost" warning.
       if (reason === "ping timeout" || reason === "transport close") {
         if (!isInactiveDialogOpen) {
           toast.warning("Connection lost. Trying to reconnect...");
         }
-      }
-      // Case 2: The server deliberately disconnected the client.
-      else if (reason === "io server disconnect") {
+      } else if (reason === "io server disconnect") {
         toast.error("You have been disconnected by the server.");
-      }
-      // Case 3: Your own code called socket.disconnect().
-      // This is intentional, so we show NO toast. It would just be noise.
-      else if (reason === "io client disconnect") {
+      } else if (reason === "io client disconnect") {
         logger.info("Client-side disconnection initiated. No toast needed.");
       }
     });
@@ -482,7 +443,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         } else if (data.mcqs) {
           currentStage = "quiz";
           setMcqList(data.mcqs);
-          setCurrentMcqIndex(0); // Reset to first question
+          setCurrentMcqIndex(0);
         }
 
         setListeningStage(currentStage);
@@ -656,8 +617,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       const { correctCount, required, message } = payload;
       const isSuccess = correctCount >= required;
 
-      // Existing logic for other modes (e.g., reading-mode)
-      // The listening-mode quiz is now handled entirely on the frontend.
       if (mode !== "listening-mode") {
         if (isSuccess) {
           toast.success("🎉 Quiz Passed!", {
@@ -679,23 +638,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       const errorMessage = (payload.message || "").toLowerCase();
 
-      // Check for specific, user-facing error messages from the server
       console.log(errorMessage, "error Message");
       if (errorMessage.includes("daily session limit")) {
         _setSessionLimitReached(true);
         toast.error("You have reached your daily session limit.");
       } else if (errorMessage.includes("user not found")) {
         toast.error("User authentication failed. Please log in again.");
-        // Optional: Redirect to login after a few seconds
         setTimeout(() => navigate("/login"), 3000);
       } else if (errorMessage.includes("chat has been completed")) {
-        // setChatCompleted(true);
-        // We can show a toast or let the banner (added below) handle the UI update.
         toast.info("This conversation has already ended.");
       } else if (errorMessage.includes("no speech recognized")) {
         toast.info("No speech recognized. Please speak clearly.");
       } else {
-        // Fallback for any other server-side issue
         toast.error(
           "An internal server error occurred. Please try again later."
         );
@@ -1072,128 +1026,60 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   // --- MODIFIED: Autoplay logic using Howler ---
-  // useEffect(() => {
-  //   const audioMsg = messages.find(
-  //     (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
-  //   );
-
-  //   if (audioMsg && audioMsg.audioUrl && isAudioUnlocked && !autoplayFailed) {
-  //     logger.info(
-  //       `Attempting to auto-play audio for message ID: ${audioMsg.id}`
-  //     );
-
-  //     // Stop any currently playing sound
-  //     if (soundRef.current) {
-  //       soundRef.current.stop();
-  //     }
-
-  //     const sound = new Howl({
-  //       src: [audioMsg.audioUrl],
-  //       html5: true,
-  //       autoplay: true,
-  //       onplay: () => {
-  //         logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
-  //         setPlayingAudioId(audioMsg.id);
-  //         setMessages((current) =>
-  //           current.map((m) =>
-  //             m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
-  //           )
-  //         );
-  //       },
-  //       onplayerror: () => {
-  //         logger.error(`Autoplay failed for message ID: ${audioMsg.id}`);
-  //         setAutoplayFailed(true);
-  //         sound.unload();
-  //         toast.info("Autoplay is disabled. Tap a message to play audio.", {
-  //           duration: 5000,
-  //         });
-  //       },
-  //       onend: () => {
-  //         setPlayingAudioId(null);
-  //       },
-  //     });
-  //     soundRef.current = sound;
-  //   }
-  // }, [messages, isAudioUnlocked, autoplayFailed]);
-  // --- MODIFIED: Autoplay logic using Howler ---
   useEffect(() => {
-    const audioMsg = messages.find(
-      (msg) => msg.type === "received" && msg.audioUrl && !msg.audioPlayed
-    );
+    if (mode !== 'listening-mode' || !listeningStage || hasAutoplayedStage === listeningStage) return;
 
-    // --- THE FIX IS HERE ---
-    // Add !isIOS() to the condition to prevent autoplay on iPhones/iPads.
-    if (
-      audioMsg &&
-      audioMsg.audioUrl &&
-      isAudioUnlocked &&
-      !autoplayFailed &&
-      !isIOS()
-    ) {
-      logger.info(
-        `Attempting to auto-play audio for message ID: ${audioMsg.id}`
-      );
+    let audioId: string;
+    let audioUrl: string | undefined;
+    let completionSetter: (value: boolean) => void;
 
-      // Stop any currently playing sound
-      if (soundRef.current) {
-        soundRef.current.stop();
-      }
-
-      const sound = new Howl({
-        src: [audioMsg.audioUrl],
-        html5: true,
-        autoplay: true,
-        onplay: () => {
-          logger.info(`Autoplay successful for message ID: ${audioMsg.id}`);
-          setPlayingAudioId(audioMsg.id);
-          setMessages((current) =>
-            current.map((m) =>
-              m.id === audioMsg.id ? { ...m, audioPlayed: true } : m
-            )
-          );
-        },
-        onplayerror: () => {
-          logger.error(`Autoplay failed for message ID: ${audioMsg.id}`);
-          setAutoplayFailed(true);
-          sound.unload();
-          toast.info("Autoplay is disabled. Tap a message to play audio.", {
-            duration: 5000,
-          });
-        },
-        onend: () => {
-          setPlayingAudioId(null);
-        },
-      });
-      soundRef.current = sound;
+    if (listeningStage === 'initial' && listeningData?.narrationAudioUrl) {
+      audioId = 'narration-audio';
+      audioUrl = listeningData.narrationAudioUrl;
+      completionSetter = setHasCompletedNarration;
+    } else if (listeningStage === 'question_text' && listeningData?.questionAudioUrl) {
+      audioId = 'question-audio';
+      audioUrl = listeningData.questionAudioUrl;
+      completionSetter = setHasCompletedQuestion;
+    } else {
+      return;
     }
-  }, [messages, isAudioUnlocked, autoplayFailed]);
-  // --- END MODIFICATION
 
-  // --- MODIFIED: Audio toggle logic using Howler ---
-  const toggleAudio = (id: string, audioUrl: string | undefined) => {
+    if (audioUrl && isAudioUnlocked && !isIOS()) {
+      logger.info(`Autoplaying audio for stage: ${listeningStage}`);
+      toggleAudio(audioId, audioUrl, () => completionSetter(true));
+
+      setHasAutoplayedStage(listeningStage);
+    } else if (isIOS()) {
+      toast.info('Tap the play button to start audio on this device.');
+      setHasAutoplayedStage(listeningStage);
+    }
+  }, [listeningStage, listeningData, isAudioUnlocked, hasAutoplayedStage, mode]);
+
+  const toggleAudio = (id: string, audioUrl: string | undefined, onEnd?: () => void) => {
     if (!audioUrl) return;
 
-    // If this sound is already playing, stop it
     if (playingAudioId === id && soundRef.current) {
       soundRef.current.stop();
       setPlayingAudioId(null);
       return;
     }
 
-    // Stop any other sound that might be playing
     if (soundRef.current) {
       soundRef.current.stop();
     }
 
-    // Create and play the new sound
     const sound = new Howl({
       src: [audioUrl],
       html5: true,
       onplay: () => setPlayingAudioId(id),
-      onend: () => setPlayingAudioId(null),
+      onend: () => {
+        setPlayingAudioId(null);
+        if (onEnd) onEnd();
+      },
       onplayerror: (soundId: number, error: any) => {
-        logger.error("Howler play error:", { soundId, error });
-        toast.error("Could not play audio.");
+        logger.error('Howler play error:', { soundId, error });
+        toast.error('Could not play audio.');
         setPlayingAudioId(null);
       },
     });
@@ -1201,7 +1087,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     sound.play();
     soundRef.current = sound;
   };
-  // --- END MODIFICATION
 
   const handleNextStage = () => {
     if (socketRef.current && userId && topicId && chatId) {
@@ -1230,33 +1115,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  // const handleSingleMcqSubmit = () => {
-  //   if (selectedAnswer === null) {
-  //     toast.warning("Please select an answer.");
-  //     return;
-  //   }
-  //   if (!socketRef.current || !chatId) {
-  //     toast.error("Connection issue, cannot submit answer.");
-  //     return;
-  //   }
-
-  //   const currentQuestion = mcqList[currentMcqIndex];
-  //   if (!currentQuestion) {
-  //     toast.error("Could not find the current question.");
-  //     return;
-  //   }
-
-  //   const answer: McqAnswer = {
-  //     questionId: currentQuestion.id,
-  //     answerIndex: selectedAnswer,
-  //   };
-
-  //   const payload = { chatId, answers: [answer] };
-  //   logger.emitting(ChatEvents.SUBMIT_MCQS, payload);
-  //   socketRef.current.emit(ChatEvents.SUBMIT_MCQS, payload);
-  // };
-
-  // All other handlers like handleResetChat, handleStillThere, handleShowAssessment remain the same
   const handleResetChat = () => {
     logger.info("Handling chat reset and reconnecting socket.");
     if (!socketRef.current) return toast.error("Socket not available.");
@@ -1268,7 +1126,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setMessages([]);
     setChatCompleted(false);
     setIsCompleteDialogOpen(false);
-    setPlayingAudioId(null); // MODIFIED
+    setPlayingAudioId(null);
     toast.info("Resetting chat session...");
 
     const resetPayload = { userId, topicId };
@@ -1354,7 +1212,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
         {mode === "listening-mode" && listeningStage && listeningData ? (
-          <div className="p-6 rounded-lg shadow-sm bg-white border border-gray-200 flex flex-col items-center text-center gap-4">
+          <div className="p-6 rounded-lg shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col items-center text-center gap-6 animate-fade-in">
             {listeningStage !== "quiz" && listeningData.kbAudioUrl && (
               <div className="w-full p-3 bg-gray-50 rounded-md border">
                 <Button
@@ -1388,10 +1246,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   onClick={() =>
                     toggleAudio(
                       "narration-audio",
-                      listeningData.narrationAudioUrl
+                      listeningData.narrationAudioUrl,
+                      () => setHasCompletedNarration(true)
                     )
                   }
-                  className="mt-2 flex items-center gap-2"
+                  className="mt-4 px-6 py-3 text-lg font-semibold bg-primary hover:bg-primary-dark transition-all duration-300 flex items-center gap-3 shadow-lg rounded-full"
                 >
                   {playingAudioId === "narration-audio" ? (
                     <Pause className="h-5 w-5" />
@@ -1416,10 +1275,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   onClick={() =>
                     toggleAudio(
                       "question-audio",
-                      listeningData.questionAudioUrl
+                      listeningData.questionAudioUrl,
+                      () => setHasCompletedQuestion(true)
                     )
                   }
-                  className="mt-2 flex items-center gap-2"
+                  className="mt-4 px-6 py-3 text-lg font-semibold bg-primary hover:bg-primary-dark transition-all duration-300 flex items-center gap-3 shadow-lg rounded-full"
                 >
                   {playingAudioId === "question-audio" ? (
                     <Pause className="h-5 w-5" />
@@ -1438,27 +1298,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 {listeningData.kbAudioUrl && (
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="lg"
                     onClick={() =>
-                      {
-                        console.log(
-                          "toggleAudio LISTENDING DATA",
-                          "kb-audio",
-                          listeningData,
-                        );
-                        toggleAudio("kb-audio", listeningData.kbAudioUrl);
-                      }}
-                    className="flex items-center gap-2"
+                      toggleAudio("kb-audio", listeningData.kbAudioUrl)
+                    }
+                    className="flex items-center gap-3 border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300 py-3 px-6 rounded-full shadow-md"
                   >
                     {playingAudioId === "kb-audio" ? (
-                      <Pause className="h-4 w-4" />
+                      <Pause className="h-6 w-6" />
                     ) : (
-                      <Play className="h-4 w-4" />
+                      <Play className="h-6 w-6" />
                     )}
                     <span>Play Narration Again</span>
                   </Button>
                 )}
-                <div className="p-4 border-t border-b w-full my-4 text-left">
+                <div className="p-6 border rounded-xl bg-white shadow-lg w-full my-4 text-left">
                   <p className="text-lg font-semibold mb-4">
                     {mcqList[currentMcqIndex].question}
                   </p>
@@ -1471,7 +1325,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                             selectedAnswer === index ? "default" : "outline"
                           }
                           onClick={() => setSelectedAnswer(index)}
-                          className="w-full justify-start p-4 h-auto"
+                          className="w-full justify-start p-4 h-auto hover:bg-gray-100 transition-colors"
                         >
                           <div
                             className={`w-5 h-5 mr-4 rounded-full border border-primary flex-shrink-0 ${
@@ -1492,7 +1346,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
             {(listeningStage === "initial" ||
               listeningStage === "question_text") && (
-              <Button onClick={handleNextStage} className="mt-6">
+              <Button onClick={handleNextStage} className="mt-6" disabled={(listeningStage === 'initial' && !hasCompletedNarration) || (listeningStage === 'question_text' && !hasCompletedQuestion)}>
                 Next Step
               </Button>
             )}
@@ -1603,7 +1457,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toggleAudio(msg.id, msg.audioUrl)} // MODIFIED
+                      onClick={() => toggleAudio(msg.id, msg.audioUrl)}
                       className={`flex items-center gap-1 p-1 h-auto ${
                         playingAudioId === msg.id
                           ? "text-primary font-semibold"
@@ -1624,7 +1478,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                       </span>
                     </Button>
                   )}
-                  {/* --- MODIFIED: Removed the hidden <audio> element --- */}
                   {msg.type === "received" && msg.hasFeedback && (
                     <Button
                       variant="ghost"
@@ -1645,7 +1498,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => toggleAudio(msg.id, msg.audioUrl)} // MODIFIED
+                      onClick={() => toggleAudio(msg.id, msg.audioUrl)}
                       className={`flex items-center gap-1 p-1 h-auto ${
                         playingAudioId === msg.id
                           ? "text-primary font-semibold"
@@ -1746,7 +1599,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         </form>
       )}
 
-      {/* --- All Dialogs remain unchanged --- */}
       <Dialog
         open={isCompleteDialogOpen}
         onOpenChange={(open) => !open && navigate(-1)}
@@ -1769,6 +1621,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               End Session
             </Button>
             {mode !== "listening-mode" && (
+              <Button onClick={handleResetChat}>Reset Chat</Button>
+            )}
+            {mode === "listening-mode" && (
               <Button onClick={handleResetChat}>Reset Chat</Button>
             )}
           </DialogFooter>
