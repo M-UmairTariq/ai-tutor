@@ -276,35 +276,39 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
 
   // --- Listening Mode State ---
-  const audioRef = React.useRef<HTMLAudioElement>(null);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const [progress, setProgress] = React.useState(0);
-  const [duration, setDuration] = React.useState(0);
-  const [currentTime, setCurrentTime] = React.useState(0);
+  const [progress, setProgress] = React.useState(30);
   const [listeningStage, setListeningStage] = useState<string | null>(null);
   const [listeningData, setListeningData] = useState<any>(null);
   const [currentMcqIndex, setCurrentMcqIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showReplayPopup, setShowReplayPopup] = useState(false);
   const [mcqAnswers, setMcqAnswers] = useState<{ [key: string]: number }>({});
+  const [barCount, setBarCount] = useState(0);
+  const [listeningSteps, setListeningSteps] = useState(1);
   // --- End Listening Mode State ---
 
-  // StartListening Mode Logic
+  const clickLocked = React.useRef(false);
+  const waveformRef = React.useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const onTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-      setProgress((audio.currentTime / audio.duration) * 100 || 0);
+  React.useLayoutEffect(() => {
+    const container = waveformRef.current;
+    if (!container) return;
+
+    const barWidth = 2;
+    const gap = 2;
+    const totalBarSpace = barWidth + gap;
+
+    const updateBarCount = () => {
+      const width = container.offsetWidth;
+      setBarCount(Math.floor(width / totalBarSpace));
     };
-    const onLoadedData = () => setDuration(audio.duration);
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("loadeddata", onLoadedData);
-    return () => {
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("loadeddata", onLoadedData);
-    };
+
+    updateBarCount();
+
+    const resizeObserver = new ResizeObserver(updateBarCount);
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
   }, []);
 
   const bars = React.useMemo(() => {
@@ -317,16 +321,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       30, 22, 16, 12, 24, 32, 20, 14, 26, 18, 28, 22, 16, 30, 12, 26, 20, 24,
       14, 24, 18, 30, 20, 28, 12, 22, 26, 16, 32, 18, 24, 14, 28, 20, 26, 18,
       30, 22, 16, 12, 24, 32, 20, 14, 26, 18, 28, 22, 16, 30, 12, 26, 20, 24,
-      16, 12, 24, 32, 20, 14, 26, 18, 28, 22, 16, 30, 12
+      16, 12, 24, 32, 20, 14, 26, 18, 28, 22, 16, 30, 12,
     ];
-    return heights.map((h, i) => (
+
+    return Array.from({ length: barCount }, (_, i) => (
       <div
         key={i}
         className="w-0.5 rounded-sm bg-gray-600"
-        style={{ height: `${h}px` }}
+        style={{ height: `${heights[i % heights.length]}px` }}
       />
     ));
-  }, []);
+  }, [barCount]);
 
   // End Listening Mode Logic
 
@@ -471,20 +476,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     socket.on("listening_payload", ({ chatId: newChatId, ...data }) => {
       setChatId(newChatId);
       setListeningData(data);
+      setProgress(30);
+      setListeningSteps(1);
 
       let currentStage: string | null = null;
       if (data.narrationText) {
         currentStage = "initial";
       } else if (data.questionText) {
         currentStage = "question_text";
+        setProgress(65);
+        setListeningSteps(2);
       } else if (data.mcqs) {
         currentStage = "quiz";
         setMcqList(data.mcqs);
         setCurrentMcqIndex(0);
+        setProgress(100);
+        setListeningSteps(3);
       }
 
       setListeningStage(currentStage);
       logger.info(`Listening mode stage inferred: ${currentStage}`, data);
+    });
+
+    socket.on("next_listening_stage", () => {
+      setProgress(2);
     });
 
     socket.on("listening_completed", () => {
@@ -1074,7 +1089,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const startInactivityTimer = () => {
     clearInactivityTimer();
     inactivityTimerRef.current = setTimeout(() => {
-      if (socketRef.current && userId && topicId && chatId) {
+      if (
+        socketRef.current &&
+        userId &&
+        topicId &&
+        chatId &&
+        mode !== "listening-mode"
+      ) {
         logger.info("No user response for 20s, emitting no_user_response");
         sendPlaceholder();
         socketRef.current.emit("no_user_response", { userId, topicId, chatId });
@@ -1297,43 +1318,101 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     // The JSX part remains largely the same, only the audio player logic needs updates.
     <>
       {mode === "listening-mode" && (
-        <div className="space-y-4 border border-blue-400 p-4 rounded-xl bg-white/70 backdrop-blur mb-4">
-          <Progress value={progress} className="h-2 bg-gray-200" />
+        <>
+          <div className="space-y-4 border border-blue-400 p-4 rounded-xl bg-white/70 backdrop-blur mb-4">
+            <Progress value={progress} className="h-2 bg-gray-200" />
 
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-blue-700">Step 1/3</span>
-            <span className="flex items-center gap-1 text-blue-700">
-              <Clock className="h-4 w-4" />
-              <span>
-                {sessionTimeRemaining
-                  ? formatTime(sessionTimeRemaining)
-                  : "..."}
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-blue-700">
+                Step {listeningSteps}/3
               </span>
-            </span>
-          </div>
+              <span className="flex items-center gap-1 text-blue-700">
+                <Clock className="h-4 w-4" />
+                <span>
+                  {sessionTimeRemaining
+                    ? formatTime(sessionTimeRemaining)
+                    : "..."}
+                </span>
+              </span>
+            </div>
 
-          {/* compact controls */}
-          <div className="flex items-center gap-3 rounded-full border border-blue-500 px-3 py-2">
-            <Button
-              size="icon"
-              className="rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-md h-9 w-9"
-              onClick={() => toggleAudio("kb-audio", listeningData?.kbAudioUrl)}
-              disabled={!listeningData?.kbAudioUrl}
-            >
-              {playingAudioId === "kb-audio" ? (
-                <Pause className="h-5 w-5" />
-              ) : (
-                <Play className="h-5 w-5" />
-              )}
-            </Button>
+            {/* compact controls */}
+            <div className="flex items-center gap-3 rounded-full border border-blue-500 px-3 py-2">
+              <Button
+                size="icon"
+                className="rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-md h-9 w-9"
+                onClick={() =>
+                  toggleAudio("kb-audio", listeningData?.kbAudioUrl)
+                }
+                disabled={!listeningData?.kbAudioUrl}
+              >
+                {playingAudioId === "kb-audio" ? (
+                  <Pause className="h-5 w-5" />
+                ) : (
+                  <Play className="h-5 w-5" />
+                )}
+              </Button>
 
-            {/* waveform area */}
-            <div className="flex h-8 w-full items-end gap-[2px] overflow-hidden">
-              {bars}
+              {/* waveform area */}
+              <div
+                ref={waveformRef}
+                className="flex h-8 w-full items-end gap-[2px] overflow-hidden"
+              >
+                {bars}
+              </div>
             </div>
           </div>
-        </div>
+          <Dialog open={showReplayPopup} onOpenChange={setShowReplayPopup}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>That's not quite right</DialogTitle>
+                <DialogDescription>
+                  Would you like to listen to the audio again for a hint before
+                  you try again?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="gap-2 sm:justify-center">
+                <Button
+                  onClick={() => {
+                    if (listeningData?.kbAudioUrl) {
+                      toggleAudio("kb-audio", listeningData.kbAudioUrl);
+                    }
+                    setShowReplayPopup(false);
+                  }}
+                >
+                  Replay Audio
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
       )}
+
+      <Dialog
+        open={isCompleteDialogOpen}
+        onOpenChange={(open) => !open && navigate(-1)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {mode === "listening-mode"
+                ? "Practice Complete"
+                : "Chat Completed"}
+            </DialogTitle>
+            <DialogDescription>
+              {mode === "listening-mode"
+                ? "Great job! You've successfully completed the listening exercise."
+                : "This conversation has ended. Would you like to start over?"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              End Session
+            </Button>
+            <Button onClick={handleResetChat}>Reset Chat</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {listeningStage === "quiz" && mcqList.length > 0 && (
         <div className="w-full flex flex-col items-center gap-4">
@@ -1678,37 +1757,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
             </form>
           )}
-
-          <Dialog
-            open={isCompleteDialogOpen}
-            onOpenChange={(open) => !open && navigate(-1)}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {mode === "listening-mode"
-                    ? "Practice Complete"
-                    : "Chat Completed"}
-                </DialogTitle>
-                <DialogDescription>
-                  {mode === "listening-mode"
-                    ? "Great job! You've successfully completed the listening exercise."
-                    : "This conversation has ended. Would you like to start over?"}
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => navigate(-1)}>
-                  End Session
-                </Button>
-                {mode !== "listening-mode" && (
-                  <Button onClick={handleResetChat}>Reset Chat</Button>
-                )}
-                {mode === "listening-mode" && (
-                  <Button onClick={handleResetChat}>Reset Chat</Button>
-                )}
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
           <Dialog
             open={isInactiveDialogOpen}
             onOpenChange={(open) => !open && handleStillThere(false)}
@@ -1730,29 +1778,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 </Button>
                 <Button onClick={() => handleStillThere(true)}>
                   Yes, I'm Here
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Dialog open={showReplayPopup} onOpenChange={setShowReplayPopup}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>That's not quite right</DialogTitle>
-                <DialogDescription>
-                  Would you like to listen to the audio again for a hint before
-                  you try again?
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter className="gap-2 sm:justify-center">
-                <Button
-                  onClick={() => {
-                    if (listeningData?.kbAudioUrl) {
-                      toggleAudio("kb-audio-replay", listeningData.kbAudioUrl);
-                    }
-                    setShowReplayPopup(false);
-                  }}
-                >
-                  Replay Audio
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -1809,9 +1834,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         <div>
           <Button
             className="w-full mt-4 rounded-full p-5"
-            onClick={
-              listeningStage === "quiz" ? handleSubmitAnswer : handleNextStage
-            }
+            onClick={() => {
+              if (clickLocked.current) return;
+              clickLocked.current = true;
+              setTimeout(() => (clickLocked.current = false), 2000);
+
+              (listeningStage === "quiz"
+                ? handleSubmitAnswer
+                : handleNextStage)();
+            }}
             disabled={
               (listeningStage === "initial" && !hasCompletedNarration) ||
               (listeningStage === "question_text" && !hasCompletedQuestion) ||
