@@ -247,7 +247,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [isCurrentlyPlaying, setIsCurrentlyPlaying] = useState(false);
   const soundRef = useRef<Howl | null>(null);
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
-  const [autoplayFailed, setAutoplayFailed] = useState(false);
+  // const [autoplayFailed, setAutoplayFailed] = useState(false);
   // --- END MODIFICATION
 
   const [topicImage, setTopicImage] = useState<string | null>(null);
@@ -281,14 +281,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showReplayPopup, setShowReplayPopup] = useState(false);
   const [mcqAnswers, setMcqAnswers] = useState<{ [key: string]: number }>({});
-  const [barCount, setBarCount] = useState(0);
+  // const [barCount, setBarCount] = useState(0);
   const [listeningSteps, setListeningSteps] = useState(1);
   // --- End Listening Mode State ---
 
   const clickLocked = React.useRef(false);
 
   // Add new states for audio completion tracking
-  const [hasCompletedNarration, setHasCompletedNarration] = useState(false);
+  const [_hasCompletedNarration, setHasCompletedNarration] = useState(false);
   const [hasCompletedQuestion, setHasCompletedQuestion] = useState(false);
   const [hasAutoplayedStage, setHasAutoplayedStage] = useState<string | null>(
     null
