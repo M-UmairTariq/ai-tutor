@@ -15,6 +15,7 @@ import {
   X,
   LoaderPinwheel,
   Award,
+  Check,
 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -285,15 +286,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [listeningSteps, setListeningSteps] = useState(1);
   // --- End Listening Mode State ---
 
+  const [isContextCompleted, setIsContextCompleted] = useState(false);
+  const [hasStartedContextAudio, setHasStartedContextAudio] = useState(false);
+
   const clickLocked = React.useRef(false);
+  const onEndCalledRef = useRef(false);
 
   // Add new states for audio completion tracking
   const [_hasCompletedNarration, setHasCompletedNarration] = useState(false);
-  const [hasCompletedQuestion, setHasCompletedQuestion] = useState(false);
+  const [_hasCompletedQuestion, setHasCompletedQuestion] = useState(false);
   const [hasAutoplayedStage, setHasAutoplayedStage] = useState<string | null>(
     null
   );
-  const [hasCompletedKbAudio, setHasCompletedKbAudio] = useState(false);
+  const [_hasCompletedKbAudio, setHasCompletedKbAudio] = useState(false);
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -767,6 +772,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     };
   }, [userId, topicId, navigate, resetActivityTimer, onTopicImage]);
 
+  useEffect(() => {
+    if (listeningStage === "question_text" && mode === "listening-mode") {
+      setIsContextCompleted(false);
+      setHasStartedContextAudio(false);
+    }
+  }, [listeningStage, mode]);
+
   const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(scrollToBottom, [messages]);
@@ -1110,7 +1122,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     if (
       mode !== "listening-mode" ||
       !listeningStage ||
-      hasAutoplayedStage === listeningStage
+      hasAutoplayedStage === listeningStage ||
+      listeningStage === "quiz"
     )
       return;
 
@@ -1118,27 +1131,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     let audioUrl: string | undefined;
     let completionSetter: (value: boolean) => void;
 
-    if (listeningStage === "initial" && listeningData?.kbAudioUrl) {
+    if ((listeningStage === "initial" || listeningStage === "question_text") && listeningData?.kbAudioUrl) {
       audioId = "kb-audio";
       audioUrl = listeningData.kbAudioUrl;
-      completionSetter = setHasCompletedKbAudio;
-    } else if (listeningStage === "initial" && listeningData?.narrationAudioUrl) {
-      audioId = "narration-audio";
-      audioUrl = listeningData.narrationAudioUrl;
-      completionSetter = setHasCompletedNarration;
-    } else if (
-      listeningStage === "question_text" &&
-      listeningData?.questionAudioUrl
-    ) {
-      audioId = "question-audio";
-      audioUrl = listeningData.questionAudioUrl;
-      completionSetter = setHasCompletedQuestion;
+      completionSetter = setIsContextCompleted;
     } else {
       return;
     }
 
     if (audioUrl && isAudioUnlocked && !isIOS()) {
-      logger.info(`Autoplaying audio for stage: ${listeningStage}`);
+      logger.info(`Autoplaying context audio for stage: ${listeningStage}`);
       toggleAudio(audioId, audioUrl, () => completionSetter(true));
 
       setHasAutoplayedStage(listeningStage);
@@ -1177,6 +1179,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       } else {
         soundRef.current.play();
         setIsCurrentlyPlaying(true);
+        if (id === "kb-audio" && mode === "listening-mode") {
+          onEndCalledRef.current = false;
+        }
       }
       return;
     }
@@ -1186,6 +1191,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
 
     clearAudioProgress();
+    onEndCalledRef.current = false;
 
     const sound = new Howl({
       src: [audioUrl],
@@ -1193,12 +1199,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       onplay: () => {
         setPlayingAudioId(id);
         setIsCurrentlyPlaying(true);
+        if (id === "kb-audio" && mode === "listening-mode") {
+          setHasStartedContextAudio(true);
+          onEndCalledRef.current = false;
+        }
         setAudioDuration(sound.duration());
         if (progressIntervalRef.current)
           clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = setInterval(() => {
           const seek = sound.seek() || 0;
           setAudioProgress(seek);
+          if (seek >= sound.duration() - 0.1 && onEnd && !onEndCalledRef.current) {
+            onEndCalledRef.current = true;
+            onEnd();
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current as unknown as number);
+            }
+            progressIntervalRef.current = null;
+          }
         }, 100);
       },
       onpause: () => {
@@ -1215,7 +1233,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         setPlayingAudioId(null);
         setIsCurrentlyPlaying(false);
         clearAudioProgress();
-        if (onEnd) onEnd();
+        if (onEnd && !onEndCalledRef.current) {
+          onEndCalledRef.current = true;
+          onEnd();
+        }
       },
       onload: () => {
         setAudioDuration(sound.duration());
@@ -1329,15 +1350,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
 
             {/* compact controls */}
-            <AudioPlayer
-              audioSrc={listeningData?.kbAudioUrl || ""}
-              isPlaying={playingAudioId === "kb-audio" && isCurrentlyPlaying}
-              progress={playingAudioId === "kb-audio" ? audioProgress : 0}
-              duration={playingAudioId === "kb-audio" ? audioDuration : 0}
-              onTogglePlay={() =>
-                toggleAudio("kb-audio", listeningData?.kbAudioUrl, () => setHasCompletedKbAudio(true))
-              }
-            />
+            <div className="relative">
+              <AudioPlayer
+                audioSrc={listeningData?.kbAudioUrl || ""}
+                isPlaying={playingAudioId === "kb-audio" && isCurrentlyPlaying}
+                progress={playingAudioId === "kb-audio" ? audioProgress : 0}
+                duration={playingAudioId === "kb-audio" ? audioDuration : 0}
+                onTogglePlay={() =>
+                  toggleAudio("kb-audio", listeningData?.kbAudioUrl, () => setIsContextCompleted(true))
+                }
+              />
+              {mode === "listening-mode" && (
+                <>
+                  {!hasStartedContextAudio ? (
+                    <span className="absolute top-0 right-0 text-blue-500 text-xs flex items-center gap-1 animate-pulse">
+                      ▶ Play to Proceed to next step
+                    </span>
+                  ) : !isContextCompleted ? (
+                    <span className="absolute top-0 right-0 text-orange-500 text-xs flex items-center gap-1">
+                      <span className="animate-spin duration-1500">⏳</span>
+                      Listening...
+                    </span>
+                  ) : (
+                    <span className="absolute top-0 right-0 text-green-500 text-xs flex items-center gap-1">
+                      ✓ Completed
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
           </div>
           <Dialog open={showReplayPopup} onOpenChange={setShowReplayPopup}>
             <DialogContent>
@@ -1352,7 +1393,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 <Button
                   onClick={() => {
                     if (listeningData?.kbAudioUrl) {
-                      toggleAudio("kb-audio", listeningData.kbAudioUrl, () => setHasCompletedKbAudio(true));
+                      toggleAudio("kb-audio", listeningData.kbAudioUrl, () => setIsContextCompleted(true));
                     }
                     setShowReplayPopup(false);
                   }}
@@ -1582,19 +1623,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() =>
-                            toggleAudio(
-                              msg.id,
-                              msg.audioUrl,
-                              mode === "listening-mode"
-                                ? msg.id === "narration-audio"
-                                  ? () => setHasCompletedNarration(true)
-                                  : msg.id === "question-audio"
-                                  ? () => setHasCompletedQuestion(true)
-                                  : undefined
-                                : undefined
-                            )
-                          }
+                          onClick={() => toggleAudio(msg.id, msg.audioUrl)}
                         >
                           {playingAudioId === msg.id && isCurrentlyPlaying ? (
                             <Pause className="h-5 w-5" />
@@ -1791,9 +1820,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 : handleNextStage)();
             }}
             disabled={
-              (listeningStage === "initial" && !hasCompletedKbAudio) ||
-              (listeningStage === "question_text" && !hasCompletedQuestion) ||
-              (listeningStage === "quiz" && selectedAnswer === null)
+              (mode === "listening-mode" && (listeningStage === "initial" || listeningStage === "question_text") && !isContextCompleted) ||
+              (mode === "listening-mode" && listeningStage === "quiz" && selectedAnswer === null)
             }
           >
             {listeningStage === "quiz" ? "Submit Answer" : "Next"}

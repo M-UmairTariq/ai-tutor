@@ -50,7 +50,7 @@ const LearningModes: React.FC = () => {
   let filteredModes = modes;
   if (schoolCategory === "government") {
     filteredModes = modes.filter(
-      (mode) => mode.title === "Reading Mode" || mode.title === "Role Play Mode"
+      (mode) => mode.title === "Reading Mode" || mode.title === "Role Play Mode" || mode.title === "Listening Mode"
     );
   }
 
