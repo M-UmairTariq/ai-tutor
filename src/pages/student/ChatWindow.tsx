@@ -676,8 +676,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       let currentStage: string | null = null;
       if (data.narrationText) {
         currentStage = "initial";
-        setMessages((prev) => [
-          ...prev,
+        setMessages([
           {
             id: "narration-audio", // Use a fixed ID for narration
             messageType: "text",
@@ -689,8 +688,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ]);
       } else if (data.questionText) {
         currentStage = "question_text";
-        setMessages((prev) => [
-          ...prev,
+        setMessages([
           {
             id: "question-audio", // Use a fixed ID for question
             messageType: "text",
@@ -702,6 +700,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ]);
       } else if (data.mcqs) {
         currentStage = "quiz";
+        setMessages([]); // Clear messages for quiz stage
         setMcqList(data.mcqs);
         setCurrentMcqIndex(0);
       }
@@ -1349,7 +1348,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
 
             {/* compact controls */}
-            <div className="relative">
+            <div>
               <AudioPlayer
                 audioSrc={listeningData?.kbAudioUrl || ""}
                 isPlaying={playingAudioId === "kb-audio" && isCurrentlyPlaying}
@@ -1360,22 +1359,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 }
               />
               {mode === "listening-mode" && (
-                <>
+                <div className="flex justify-end items-center h-4 pr-2 mt-2 md:mt-0">
                   {!hasStartedContextAudio ? (
-                    <span className="absolute top-0 right-0 text-blue-500 text-xs flex items-center gap-1 animate-pulse">
-                      ▶ Play to Proceed to next step
+                    <span className="text-blue-500 text-xs flex items-center gap-1 animate-pulse">
+                      ▶ Play to proceed to next step
                     </span>
                   ) : !isContextCompleted ? (
-                    <span className="absolute top-0 right-0 text-orange-500 text-xs flex items-center gap-1">
+                    <span className="text-orange-500 text-xs flex items-center gap-1">
                       <span className="animate-spin duration-1500">⏳</span>
                       Listening...
                     </span>
                   ) : (
-                    <span className="absolute top-0 right-0 text-green-500 text-xs flex items-center gap-1">
+                    <span className="text-green-500 text-xs flex items-center gap-1">
                       ✓ Completed
                     </span>
                   )}
-                </>
+                </div>
               )}
             </div>
           </div>
@@ -1434,6 +1433,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       {listeningStage === "quiz" && mcqList.length > 0 && (
         <div className="w-full flex flex-col items-center gap-4">
           <div className="p-6 border rounded-xl bg-white shadow-lg w-full my-4 text-left">
+            <div className="flex justify-end mb-2">
+              <span className="text-sm font-semibold text-gray-600">
+                Question {currentMcqIndex + 1}/{mcqList.length}
+              </span>
+            </div>
             <p className="text-lg font-semibold mb-4">
               {mcqList[currentMcqIndex].question}
             </p>
@@ -1444,7 +1448,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     key={index}
                     variant={selectedAnswer === index ? "default" : "outline"}
                     onClick={() => setSelectedAnswer(index)}
-                    className="w-full justify-start p-4 h-auto hover:bg-gray-100 transition-colors"
+                    className="w-full justify-start p-4 h-auto transition-colors"
                   >
                     <div
                       className={`w-5 h-5 mr-4 rounded-full border border-primary flex-shrink-0 ${
