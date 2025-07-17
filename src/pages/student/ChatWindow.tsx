@@ -15,7 +15,6 @@ import {
   X,
   LoaderPinwheel,
   Award,
-  Check,
 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -293,12 +292,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const onEndCalledRef = useRef(false);
 
   // Add new states for audio completion tracking
-  const [_hasCompletedNarration, setHasCompletedNarration] = useState(false);
-  const [_hasCompletedQuestion, setHasCompletedQuestion] = useState(false);
+  const [_hasCompletedNarration, _setHasCompletedNarration] = useState(false);
+  const [_hasCompletedQuestion, _setHasCompletedQuestion] = useState(false);
   const [hasAutoplayedStage, setHasAutoplayedStage] = useState<string | null>(
     null
   );
-  const [_hasCompletedKbAudio, setHasCompletedKbAudio] = useState(false);
+  const [_hasCompletedKbAudio, _setHasCompletedKbAudio] = useState(false);
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
