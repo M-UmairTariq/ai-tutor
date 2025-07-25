@@ -21,6 +21,12 @@ const modes = [
     route: "/student/learning-modes/photo-mode",
   },
   {
+    title: "Debate Mode",
+    description: "Practice debating skills and critical thinking with the AI.",
+    image: debateModeAvatar,
+    route: "/student/learning-modes/debate-mode",
+  },
+  {
     title: "Reading Mode",
     description: "Let's read through fun stories and practice saying words with the AI.",
     image: debateModeAvatar,
