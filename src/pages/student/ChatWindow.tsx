@@ -272,6 +272,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     pointValue: number;
   } | null>(null);
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
+  const [isDuplicateConnectionModalOpen, setIsDuplicateConnectionModalOpen] = useState(false);
 
   // --- Listening Mode State ---
   const [progress, setProgress] = React.useState(30);
@@ -720,9 +721,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       removeLoadingMessage();
 
       const errorMessage = (payload.message || "").toLowerCase();
+      const errorCode = payload.code;
 
       console.log(errorMessage, "error Message");
-      if (errorMessage.includes("daily session limit")) {
+      console.log(errorCode, "error Code");
+      
+      if (errorCode === "DUPLICATE_CONNECTION" || errorMessage.includes("already connected from another session")) {
+        setIsDuplicateConnectionModalOpen(true);
+      } else if (errorMessage.includes("daily session limit")) {
         _setSessionLimitReached(true);
         toast.error("You have reached your daily session limit.");
       } else if (errorMessage.includes("user not found")) {
@@ -1864,6 +1870,50 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   className="w-full"
                 >
                   Claim & Continue
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isDuplicateConnectionModalOpen} onOpenChange={setIsDuplicateConnectionModalOpen}>
+            <DialogContent className="sm:max-w-md text-center">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-red-600">
+                  Duplicate Session Detected
+                </DialogTitle>
+                <DialogDescription className="text-center pt-2">
+                  You are already connected from another session. Please logout from other sessions and try again.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center justify-center p-4 my-4 bg-red-50 rounded-lg border border-red-200">
+                <div className="w-16 h-16 mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                  <X className="h-8 w-8 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-red-700 mb-2">
+                  Connection Blocked
+                </h3>
+                <p className="text-sm text-red-600 text-center">
+                  Only one active session is allowed per account. Please close other browser tabs or devices where you're logged in.
+                </p>
+              </div>
+              <DialogFooter className="sm:justify-center space-y-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDuplicateConnectionModalOpen(false);
+                    navigate("/login");
+                  }}
+                  className="w-full"
+                >
+                  Go to Login
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsDuplicateConnectionModalOpen(false);
+                    window.location.reload();
+                  }}
+                  className="w-full"
+                >
+                  Try Again
                 </Button>
               </DialogFooter>
             </DialogContent>

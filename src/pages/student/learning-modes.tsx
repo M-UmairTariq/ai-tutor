@@ -5,7 +5,9 @@ import chatModeAvatar from "@/assets/svgs/chatModeAvatar.svg";
 import photoModeAvatar from "@/assets/svgs/photoModeAvatar.svg";
 import debateModeAvatar from "@/assets/svgs/debateModeAvatar.svg";
 import roleplayModeAvatar from "@/assets/svgs/roleplayModeAvatar.svg";
-  // import QuestionnaireModal from "@/components/ui/QuestionaireModal";
+import listeningModeAvatar from "@/assets/svgs/listening-mode.png";
+import ReadingModeAvatar from "@/assets/svgs/reading-mode.png";
+// import QuestionnaireModal from "@/components/ui/QuestionaireModal";
 
 const modes = [
   {
@@ -23,7 +25,7 @@ const modes = [
   {
     title: "Reading Mode",
     description: "Let's read through fun stories and practice saying words with the AI.",
-    image: debateModeAvatar,
+    image: ReadingModeAvatar,
     route: "/student/learning-modes/reading-mode",
   },
   {
@@ -35,7 +37,7 @@ const modes = [
   {
     title: "Listening Mode",
     description: "Listen to stories and practice saying words with the AI.",
-    image: roleplayModeAvatar,
+    image: listeningModeAvatar,
     route: "/student/learning-modes/listening-mode",
   },
   {
@@ -56,7 +58,7 @@ const LearningModes: React.FC = () => {
   let filteredModes = modes;
   if (schoolCategory === "government") {
     filteredModes = modes.filter(
-      (mode) => mode.title === "Reading Mode" || mode.title === "Role Play Mode" || mode.title === "Listening Mode"
+      (mode) => mode.title === "Reading Mode" || mode.title === "Role Play Mode" || mode.title === "Listening Mode" || mode.title === "Debate Mode"
     );
   }
 
