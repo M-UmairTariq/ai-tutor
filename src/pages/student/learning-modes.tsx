@@ -38,6 +38,12 @@ const modes = [
     image: roleplayModeAvatar,
     route: "/student/learning-modes/listening-mode",
   },
+  {
+    title: "Debate Mode",
+    description: "Practice debating skills and critical thinking with the AI.",
+    image: debateModeAvatar,
+    route: "/student/learning-modes/debate-mode",
+  },
 ];
 
 const LearningModes: React.FC = () => {

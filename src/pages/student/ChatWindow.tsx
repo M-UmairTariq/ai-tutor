@@ -822,6 +822,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const startRecording = async () => {
     logger.info("Start recording requested.");
+    // Reset inactivity timer when user starts recording
+    resetInactivityTimer();
+    
     if (chatCompleted || _sessionLimitReached) {
       toast.warning("Cannot record: The chat session is complete.");
       return;
@@ -902,6 +905,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         const payload = { userId, chatId, audioBuffer: audioBase64, format };
         socketRef.current?.emit(ChatEvents.AUDIO, payload);
         resetActivityTimer();
+        resetInactivityTimer();
       };
 
       recorder.onerror = (event) => {
@@ -965,6 +969,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   const handleSubmitAnswer = () => {
+    // Reset inactivity timer when user submits MCQ answer
+    resetInactivityTimer();
+    
     if (selectedAnswer === null) {
       toast.warning("Please select an answer.");
       return;
@@ -1012,6 +1019,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleQuestionnaireSubmit = (answers: {
     [questionId: string]: number;
   }) => {
+    // Reset inactivity timer when user submits questionnaire
+    resetInactivityTimer();
+    
     const mcqAnswers: McqAnswer[] = Object.entries(answers).map(
       ([questionId, answerIndex]) => ({
         questionId,
@@ -1046,29 +1056,46 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
+      logger.info("Inactivity timer cleared");
     }
   };
 
   const startInactivityTimer = () => {
+    // Don't start inactivity timer for listening mode since it doesn't have text/audio inputs
+    if (mode === "listening-mode") {
+      logger.info("Skipping inactivity timer for listening mode");
+      return;
+    }
+
     clearInactivityTimer();
     inactivityTimerRef.current = setTimeout(() => {
       if (
         socketRef.current &&
         userId &&
         topicId &&
-        chatId &&
-        mode !== "listening-mode"
+        chatId
       ) {
-        logger.info("No user response for 20s, emitting no_user_response");
+        logger.info("No user response for 2 minutes, emitting no_user_response");
         sendPlaceholder();
         socketRef.current.emit("no_user_response", { userId, topicId, chatId });
       }
     }, 2 * 60 * 1000);
+    logger.info("Inactivity timer started (2 minutes)");
+  };
+
+  const resetInactivityTimer = () => {
+    logger.info("User activity detected - resetting inactivity timer");
+    clearInactivityTimer();
+    
+    // Only restart if we're not in listening mode
+    if (mode !== "listening-mode") {
+      startInactivityTimer();
+    }
   };
 
   useEffect(() => {
     if (message.trim()) {
-      clearInactivityTimer();
+      resetInactivityTimer();
     }
   }, [message]);
 
@@ -1112,7 +1139,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     socketRef.current?.emit(ChatEvents.TEXT, payload);
     setMessage("");
     resetActivityTimer();
-    clearInactivityTimer();
+    resetInactivityTimer();
   };
 
   // --- MODIFIED: Autoplay logic using Howler ---
@@ -1169,6 +1196,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     onEnd?: () => void
   ) => {
     if (!audioUrl) return;
+
+    // Reset inactivity timer when user interacts with audio
+    resetInactivityTimer();
 
     if (soundRef.current && playingAudioId === id) {
       if (soundRef.current.playing()) {
@@ -1253,6 +1283,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   const handleNextStage = () => {
+    // Reset inactivity timer when user clicks next
+    resetInactivityTimer();
+    
     if (socketRef.current && userId && topicId && chatId) {
       const payload = { userId, topicId, chatId };
       logger.emitting(ChatEvents.NEXT_STAGE, payload);
@@ -1286,20 +1319,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   const handleResetChat = () => {
-    logger.info("Handling chat reset and reconnecting socket.");
+    logger.info("Handling chat reset - disconnecting and reconnecting socket.");
     if (!socketRef.current) return toast.error("Socket not available.");
 
-    const payload = { userId, topicId };
-    logger.emitting(ChatEvents.RESET_CHAT, payload);
-    socketRef.current.emit(ChatEvents.RESET_CHAT, payload);
+    // First disconnect the socket
+    socketRef.current.disconnect();
+    
+    // Wait a moment then reconnect and emit reset
+    setTimeout(() => {
+      if (socketRef.current) {
+        socketRef.current.connect();
+        
+        // Wait for connection to be established
+        socketRef.current.on('connect', () => {
+          const payload = { userId, topicId };
+          logger.emitting(ChatEvents.RESET_CHAT, payload);
+          socketRef.current?.emit(ChatEvents.RESET_CHAT, payload);
+          
+          setMessages([]);
+          setChatCompleted(false);
+          setIsCompleteDialogOpen(false);
+          setPlayingAudioId(null);
+          toast.info("Resetting chat session...");
 
-    setMessages([]);
-    setChatCompleted(false);
-    setIsCompleteDialogOpen(false);
-    setPlayingAudioId(null);
-    toast.info("Resetting chat session...");
-
-    window.location.reload();
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        });
+      }
+    }, 500);
   };
 
   const handleStillThere = (isContinuing: boolean) => {
@@ -1447,7 +1495,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   <Button
                     key={index}
                     variant={selectedAnswer === index ? "default" : "outline"}
-                    onClick={() => setSelectedAnswer(index)}
+                    onClick={() => {
+                      setSelectedAnswer(index);
+                      resetInactivityTimer();
+                    }}
                     className="w-full justify-start p-4 h-auto transition-colors"
                   >
                     <div
@@ -1560,7 +1611,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   <Button
                     variant="link"
                     size="sm"
-                    onClick={() => setIsContentExpanded(!isContentExpanded)}
+                    onClick={() => {
+                      setIsContentExpanded(!isContentExpanded);
+                      resetInactivityTimer();
+                    }}
                     className="text-sm text-blue-600 p-0 h-auto"
                   >
                     {isContentExpanded ? "See Less" : "See More"}
@@ -1639,12 +1693,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
+                          onClick={() => {
                             onShowFeedback({
                               type: "feedback",
                               content: msg.feedback,
-                            })
-                          }
+                            });
+                            resetInactivityTimer();
+                          }}
                           className="flex items-center gap-1 text-primary text-xs p-1 h-auto"
                         >
                           <MessageCircle className="h-4 w-4" />
@@ -1655,7 +1710,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleShowAssessment(msg.assessments)}
+                          onClick={() => {
+                            handleShowAssessment(msg.assessments);
+                            resetInactivityTimer();
+                          }}
                           className="flex items-center gap-1 bg-white text-primary text-xs p-1 h-auto rounded-md shadow-sm border"
                         >
                           <BarChart2 className="h-4 w-4" />
