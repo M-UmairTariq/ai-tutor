@@ -416,7 +416,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         logger.emitting(ChatEvents.GET_CHAT_HISTORY, historyPayload);
         socket.emit(ChatEvents.GET_CHAT_HISTORY, historyPayload);
 
-        if (mode === "reading-mode" || mode === "roleplay-mode") {
+        if (
+          mode === "reading-mode" ||
+          mode === "roleplay-mode" ||
+          mode === "debate-mode"
+        ) {
           const payload = { userId, topicId };
           logger.emitting(ChatEvents.CONTENT_PAYLOAD, payload);
           socket.emit(ChatEvents.CONTENT_PAYLOAD, payload);
@@ -624,7 +628,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       if (data) {
         const { content, contentAudioUrl } = data;
         if (
-          (mode === "reading-mode" || mode === "roleplay-mode") &&
+          (mode === "reading-mode" ||
+            mode === "roleplay-mode" ||
+            mode === "debate-mode") &&
           content &&
           contentAudioUrl
         ) {
@@ -1373,6 +1379,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       sec % 60
     ).padStart(2, "0")}`;
 
+
+
   return (
     // The JSX part remains largely the same, only the audio player logic needs updates.
     <>
@@ -1534,7 +1542,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   : mode === "reading-mode"
                   ? "Reading Mode"
                   : mode === "roleplay-mode"
-                  ? "Roleplay Mode"
+                  ? "Roleplay Mode" 
+                  : mode === "debate-mode"
+                  ? "Debate Mode"
                   : "Chat Mode"}
               </h2>
               <div className="flex items-center gap-2 text-sm text-gray-500">

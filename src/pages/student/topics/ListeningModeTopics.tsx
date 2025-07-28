@@ -153,7 +153,7 @@ const ChatModeTopics = () => {
 
 
                    <CardFooter className='flex justify-end'>
-                        <Link to={`/student/learning-mode/${topic?.id}/${topic.topicName}?mode=listening-mode`} className={locked ? 'pointer-events-none' : ''}>
+                        <Link to={`/student/learning-mode/${topic?.id}/${encodeURIComponent(topic.topicName)}?mode=listening-mode`} className={locked ? 'pointer-events-none' : ''}>
                     <Button
                       size="sm"
                       disabled={locked}

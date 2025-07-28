@@ -148,7 +148,7 @@ const RolePlayModeTopics = () => {
                   </CardContent>
                     
                     <CardFooter className='flex justify-end'>
-                      <Link to={`/student/learning-mode/${topic?.id}/${topic?.topicName}?mode=roleplay-mode`} className={locked ? 'pointer-events-none' : ''}>
+                                              <Link to={`/student/learning-mode/${topic?.id}/${encodeURIComponent(topic?.topicName)}?mode=roleplay-mode`} className={locked ? 'pointer-events-none' : ''}>
 
                       <Button
                         size="sm"

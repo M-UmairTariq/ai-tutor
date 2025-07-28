@@ -123,7 +123,7 @@ const DebateModeTopics = () => {
                     <h3 className="font-medium text-base">{topic.topicName}</h3>
                   </CardContent>
                   <CardFooter className='flex justify-end'>
-                    <Link to={`/student/learning-mode/${topic?.id}/${topic.topicName}?mode=debate-mode`} className={locked ? 'pointer-events-none' : ''}>
+                    <Link to={`/student/learning-mode/${topic?.id}/${encodeURIComponent(topic.topicName)}?mode=debate-mode`} className={locked ? 'pointer-events-none' : ''}>
                       <Button
                         size="sm"
                         disabled={locked}
