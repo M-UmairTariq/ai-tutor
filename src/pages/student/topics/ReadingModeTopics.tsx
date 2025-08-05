@@ -133,12 +133,16 @@ const ReadingModeTopics = () => {
                     <img
                       src={topic.attachmentUrl}
                       alt={topic.topicName}
-                      className={`absolute inset-0 w-full h-full object-cover ${locked ? 'filter grayscale' : ''}`}
+                      className={`absolute inset-0 w-full h-full object-cover ${
+                        locked ? "filter grayscale" : ""
+                      }`}
                     />
                     {locked && (
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-white p-4">
                         <Lock className="w-8 h-8 mb-2" />
-                        <span className="text-center font-semibold">{unlockCountdown}</span>
+                        <span className="text-center font-semibold">
+                          {unlockCountdown}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -146,19 +150,28 @@ const ReadingModeTopics = () => {
                   <CardContent className="flex-grow p-4">
                     <h3 className="font-medium text-base">{topic.topicName}</h3>
                   </CardContent>
-                    
-                    <CardFooter className='flex justify-end'>
-                                              <Link to={`/student/learning-mode/${topic?.id}/${encodeURIComponent(topic?.topicName)}?mode=reading-mode`} className={locked ? 'pointer-events-none' : ''}>
 
-                      <Button
-                        size="sm"
-                        disabled={locked}
-                      >
+                  <CardFooter className="flex items-center justify-between">
+                    {topic.isCompleted ? (
+                      <span className="inline-flex items-center rounded-md bg-green-100 px-3 py-2 text-xs font-medium text-green-800">
+                        Completed
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-xs font-medium text-gray-500">
+                        Incomplete
+                      </span>
+                    )}
+                    <Link
+                      to={`/student/learning-mode/${
+                        topic?.id
+                      }/${encodeURIComponent(topic.topicName)}?mode=reading-mode`}
+                      className={locked ? "pointer-events-none" : ""}
+                    >
+                      <Button size="sm" disabled={locked}>
                         Start
                       </Button>
                     </Link>
-                    </CardFooter>
-
+                  </CardFooter>
                 </Card>
               );
             })
