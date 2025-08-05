@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Trophy, Star, Calendar, Clock, BookOpen } from "lucide-react";
 import apiClient from "@/config/ApiConfig";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
