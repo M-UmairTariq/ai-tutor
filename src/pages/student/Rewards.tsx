@@ -539,14 +539,14 @@ const Rewards = (): JSX.Element => {
           onValueChange={(v) => setTab(v as "rewards" | "certifications")}
           className="w-full"
         >
-          <TabsList className="w-full mb-8 px-2 py-4">
+{/*           <TabsList className="w-full mb-8 px-2 py-4">
             <TabsTrigger className="w-full" value="rewards">
               Rewards
             </TabsTrigger>
             <TabsTrigger className="w-full" value="certifications">
               Certifications
             </TabsTrigger>
-          </TabsList>
+          </TabsList> */}
           <TabsContent value="rewards">
             <main className="space-y-8">
               {achievements.map((category) => (
