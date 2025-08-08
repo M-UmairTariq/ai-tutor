@@ -272,9 +272,14 @@ const Rewards = (): JSX.Element => {
         return;
       }
       await apiClient.post(
-        `/users/${userId}/achievements/${achievementKey}/claim`
+        `/users/${userId}/achievements/${achievementKey}/claim`,
+        {
+          achievementKey: achievementKey,
+          claimedAt: new Date().toISOString(),
+        }
       );
       await fetchAchievements();
+      await fetchCertificates();
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message ||
@@ -288,7 +293,6 @@ const Rewards = (): JSX.Element => {
 
   const modifyPDF = async (cert: Certification) => {
     try {
-
       const pdfRes = await fetch(certTemplateUrl);
       if (!pdfRes.ok) {
         console.error(
