@@ -1,22 +1,33 @@
 import { useState, useEffect, useRef } from "react";
 import { Trophy, Star, Calendar, Clock, BookOpen } from "lucide-react";
 import apiClient from "@/config/ApiConfig";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { PDFDocument, rgb } from "pdf-lib";
-import { DownloadIcon, ShareIcon, CertificateIcon } from "@/components/Icons";
+import {
+  DownloadIcon,
+  ShareIcon,
+  CertificateIcon,
+  CertificateClaimableIcon,
+  CertificateLockedIcon,
+} from "@/components/Icons";
 import { Worker, Viewer } from "@react-pdf-viewer/core";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import fontkit from "@pdf-lib/fontkit";
 import certTemplateUrl from "/src/assets/Certificate_Template.pdf?url";
 import markerFontUrl from "/src/assets/fonts/lumiosbrush-regular.otf?url";
+import * as pdfjs from "pdfjs-dist";
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.js",
+  import.meta.url
+).toString();
 
 // Describes a single achievement from your API
 interface Achievement {
@@ -49,6 +60,22 @@ interface UserStats {
   updatedAt: string;
 }
 
+// Describes a single certification from your API
+interface Certification {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  pointValue: number;
+  rewardClaimed: boolean;
+  awardedAt?: string; // ISO date string
+  iconUrl?: string; // The URL for the certification's icon
+  issueDate: string;
+  title: string;
+  studentName: string;
+  pdfUrl?: string | null;
+}
+
 // --- Component Props ---
 
 interface AchievementCardProps {
@@ -68,16 +95,11 @@ const Rewards = (): JSX.Element => {
   const [claimingReward, setClaimingReward] = useState<string | null>(null);
   const [tab, setTab] = useState<"rewards" | "certifications">("rewards");
 
-  const [certificates, setCertificates] = useState(
-    Array(12).fill({
-      issueDate: "Jun 25, 2025",
-      title: "Deep Learning Certificate",
-      studentName: "Muhammad Hamza",
-      description:
-        "In recognition of their successful completion of five engaging topics in Reading Mode with enthusiasm and consistent effort in reading and understanding.",
-      pdfUrl: null,
-    })
-  );
+  const [certificates, setCertificates] = useState<Certification[]>([]);
+  const [certificatesLoading, setCertificatesLoading] = useState<boolean>(true);
+  const [selectedCertificate, setSelectedCertificate] =
+    useState<Certification | null>(null);
+  const [generatingPDF, setGeneratingPDF] = useState<boolean>(false);
 
   // Static data defining the level structure
   // const levelData: Level[] = [
@@ -133,6 +155,7 @@ const Rewards = (): JSX.Element => {
 
   useEffect(() => {
     fetchAchievements();
+    fetchCertificates();
   }, []);
 
   const fetchAchievements = async () => {
@@ -157,8 +180,6 @@ const Rewards = (): JSX.Element => {
         data: { achievements: AchievementCategory[]; userStats: UserStats };
       }>(`/users/${userId}/achievements`);
 
-      console.log("Achievements response:", response.data);
-
       if (response.data.status === "success") {
         const { achievements, userStats } = response.data.data;
         setAchievements(achievements);
@@ -174,6 +195,64 @@ const Rewards = (): JSX.Element => {
       console.error("Error fetching achievements:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCertificates = async () => {
+    try {
+      setCertificatesLoading(true);
+      setError(null);
+      const aiTutorUserString = localStorage.getItem("AiTutorUser");
+      if (!aiTutorUserString) {
+        setError("User not found. Please log in.");
+        setCertificatesLoading(false);
+        return;
+      }
+      const aiTutorUser = JSON.parse(aiTutorUserString);
+      const userId = aiTutorUser.id;
+      if (!userId) {
+        setError("User not found. Please log in again.");
+        setCertificatesLoading(false);
+        return;
+      }
+      const response = await apiClient.get<{
+        status: string;
+        data: {
+          certificates: { earned: Certification[]; locked: Certification[] };
+          user: { firstName: string; lastName: string };
+          userStats: UserStats;
+        };
+      }>(`/users/${userId}/achievements/certificates`);
+
+      if (response.data.status === "success") {
+        const { certificates, user } = response.data.data;
+
+        // Transform certifications data to include required fields
+        const transformedCertifications: Certification[] = [
+          ...certificates.earned,
+          ...certificates.locked,
+        ].map((certification) => ({
+          ...certification,
+          issueDate: certification.awardedAt
+            ? new Date(certification.awardedAt).toLocaleDateString()
+            : "Not issued yet",
+          title: `${certification.name} Certificate`,
+          studentName: `${user.firstName} ${user.lastName}`,
+          pdfUrl: undefined,
+        }));
+
+        setCertificates(transformedCertifications);
+      } else {
+        setError("Failed to load certifications");
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to load certifications. Please try again."
+      );
+      console.error("Error fetching certifications:", err);
+    } finally {
+      setCertificatesLoading(false);
     }
   };
 
@@ -193,9 +272,14 @@ const Rewards = (): JSX.Element => {
         return;
       }
       await apiClient.post(
-        `/users/${userId}/achievements/${achievementKey}/claim`
+        `/users/${userId}/achievements/${achievementKey}/claim`,
+        {
+          achievementKey: achievementKey,
+          claimedAt: new Date().toISOString(),
+        }
       );
       await fetchAchievements();
+      await fetchCertificates();
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message ||
@@ -207,11 +291,20 @@ const Rewards = (): JSX.Element => {
     }
   };
 
-  const modifyPDF = async (cert: (typeof certificates)[0]) => {
+  const modifyPDF = async (cert: Certification) => {
     try {
       const pdfRes = await fetch(certTemplateUrl);
-      if (!pdfRes.ok) return null;
+      if (!pdfRes.ok) {
+        console.error(
+          "Failed to fetch PDF template:",
+          pdfRes.status,
+          pdfRes.statusText
+        );
+        return null;
+      }
+
       const pdfBytes = await pdfRes.arrayBuffer();
+
       const pdfDoc = await PDFDocument.load(pdfBytes);
 
       pdfDoc.registerFontkit(fontkit);
@@ -220,7 +313,15 @@ const Rewards = (): JSX.Element => {
       const { width } = firstPage.getSize();
 
       const fontRes = await fetch(markerFontUrl);
-      if (!fontRes.ok) return null;
+      if (!fontRes.ok) {
+        console.error(
+          "Failed to fetch font:",
+          fontRes.status,
+          fontRes.statusText
+        );
+        return null;
+      }
+
       const fontBytes = await fontRes.arrayBuffer();
       const customFont = await pdfDoc.embedFont(fontBytes);
       const helvetica = await pdfDoc.embedFont("Helvetica");
@@ -292,30 +393,42 @@ const Rewards = (): JSX.Element => {
 
       // Finalize PDF
       const modifiedPdfBytes = await pdfDoc.save();
+
       const blob = new Blob([modifiedPdfBytes], { type: "application/pdf" });
+
       const url = URL.createObjectURL(blob);
 
       return url;
     } catch (error) {
-      console.log("Error modifying PDF:", error);
+      console.error("Error modifying PDF:", error);
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       return null;
     }
   };
 
-  // Generate PDFs when certificates change
-  useEffect(() => {
-    const generatePDFs = async () => {
-      const updatedCerts = await Promise.all(
-        certificates.map(async (cert) => {
-          const pdfUrl = await modifyPDF(cert);
-          return { ...cert, pdfUrl };
-        })
-      );
-      setCertificates(updatedCerts);
-    };
+  // Function to handle certificate click and generate PDF on-demand
+  const handleCertificateClick = async (cert: Certification) => {
+    setSelectedCertificate(cert);
+    setGeneratingPDF(true);
 
-    generatePDFs();
-  }, []);
+    try {
+      const pdfUrl = await modifyPDF(cert);
+
+      if (pdfUrl) {
+        setSelectedCertificate({ ...cert, pdfUrl });
+      } else {
+        setSelectedCertificate({ ...cert, pdfUrl: null });
+      }
+    } catch (error) {
+      console.error("Error in handleCertificateClick:", error);
+      setSelectedCertificate({ ...cert, pdfUrl: null });
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
 
   // const getCurrentLevel = (): Level => {
   //   return (
@@ -511,6 +624,90 @@ const Rewards = (): JSX.Element => {
     );
   };
 
+  const CertificationCard = ({
+    certification,
+  }: {
+    certification: Certification;
+  }): JSX.Element => {
+    const isEarned = certification.awardedAt != null;
+    const canClaim = isEarned && !certification.rewardClaimed;
+
+    return (
+      <div
+        className={`relative bg-white border transition-all hover:border-blue-500 rounded-lg p-6 flex items-center cursor-pointer ${
+          !isEarned ? "opacity-60 grayscale" : ""
+        }`}
+        onClick={() => {
+          if (isEarned) {
+            handleCertificateClick(certification);
+          }
+        }}
+      >
+        <div className="me-3">
+          {isEarned && !certification.rewardClaimed ? (
+            <CertificateClaimableIcon className="w-30 h-30 text-blue-500" />
+          ) : isEarned && certification.rewardClaimed ? (
+            <CertificateIcon className="w-30 h-30 text-blue-500" />
+          ) : (
+            <CertificateLockedIcon className="w-30 h-30 text-gray-400" />
+          )}
+        </div>
+        <div className="mb-4 flex flex-col">
+          <div
+            className={`mb-4 ${isEarned ? "text-blue-500" : "text-gray-400"}`}
+          >
+            <i className="fas fa-certificate"></i>
+          </div>
+          <p
+            className={`text-sm ${
+              isEarned ? "text-gray-500" : "text-gray-400"
+            }`}
+          >
+            {isEarned
+              ? `Issue ${certification.issueDate}`
+              : certification.issueDate}
+          </p>
+          <h2
+            className={`text-sm font-medium mt-2 ${
+              isEarned ? "text-gray-800" : "text-gray-500"
+            }`}
+          >
+            {certification.title}
+          </h2>
+        </div>
+
+        {canClaim && (
+          <>
+            <div className="absolute inset-0 bg-blue-200/50 backdrop-blur-[2.5px] rounded-lg"></div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                claimReward(certification.key);
+              }}
+              disabled={claimingReward === certification.key}
+              className="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 px-4 rounded-full text-xs font-medium transition-colors flex items-center justify-center gap-2 shadow-md w-32 h-10 drop-shadow-sm"
+            >
+              {claimingReward === certification.key ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Claiming...
+                </>
+              ) : (
+                <>Claim Reward</>
+              )}
+            </button>
+          </>
+        )}
+
+        {isEarned && (
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+            <Trophy className="w-4 h-4 text-white" />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // --- Main Render Logic ---
 
   if (loading) {
@@ -539,14 +736,14 @@ const Rewards = (): JSX.Element => {
           onValueChange={(v) => setTab(v as "rewards" | "certifications")}
           className="w-full"
         >
-{/*           <TabsList className="w-full mb-8 px-2 py-4">
+          <TabsList className="w-full mb-8 px-2 py-4">
             <TabsTrigger className="w-full" value="rewards">
               Rewards
             </TabsTrigger>
             <TabsTrigger className="w-full" value="certifications">
               Certifications
             </TabsTrigger>
-          </TabsList> */}
+          </TabsList>
           <TabsContent value="rewards">
             <main className="space-y-8">
               {achievements.map((category) => (
@@ -585,59 +782,81 @@ const Rewards = (): JSX.Element => {
             </main>
           </TabsContent>
           <TabsContent value="certifications">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-              {certificates.map((cert, index) => (
-                <Dialog key={index}>
-                  <DialogTrigger asChild>
-                    <div className="bg-white border transition-all hover:border-blue-500 rounded-lg p-6 flex items-center cursor-pointer">
-                      <div className="me-3">
-                        <CertificateIcon className="w-30 h-30 text-blue-500" />
-                      </div>
-                      <div className="mb-4 flex flex-col">
-                        <div className="text-blue-500 mb-4">
-                          <i className="fas fa-certificate"></i>
+            {certificatesLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">
+                    Loading your certifications...
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+                {certificates.map((cert) => (
+                  <CertificationCard key={cert.id} certification={cert} />
+                ))}
+              </div>
+            )}
+
+            {/* Certificate Dialog */}
+            {selectedCertificate && (
+              <Dialog
+                open={!!selectedCertificate}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setSelectedCertificate(null);
+                    setGeneratingPDF(false);
+                  }
+                }}
+              >
+                <DialogContent className="max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-4xl w-full p-4 sm:p-6 md:p-8 bg-white rounded-lg shadow-lg overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg sm:text-xl md:text-2xl font-semibold">
+                      {selectedCertificate.title}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="w-full h-full bg-white rounded-lg overflow-hidden">
+                    {generatingPDF ? (
+                      <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                          <p className="text-gray-600">
+                            Generating certificate PDF...
+                          </p>
                         </div>
-                        <p className="text-gray-500 text-sm">
-                          Issue {cert.issueDate}
-                        </p>
-                        <h2 className="text-gray-800 text-sm font-medium mt-2">
-                          {cert.title}
-                        </h2>
                       </div>
-                    </div>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-4xl w-full p-4 sm:p-6 md:p-8 bg-white rounded-lg shadow-lg overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="text-lg sm:text-xl md:text-2xl font-semibold">
-                        {cert.title}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="w-full h-full bg-white rounded-lg overflow-hidden">
-                      {cert.pdfUrl ? (
-                        <Worker
-                          workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}
-                        >
-                          <Viewer fileUrl={cert.pdfUrl} />
+                    ) : selectedCertificate.pdfUrl ? (
+                      <div>
+                        <Worker workerUrl={pdfjs.GlobalWorkerOptions.workerSrc}>
+                          <Viewer fileUrl={selectedCertificate.pdfUrl} />
                         </Worker>
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                          <p className="text-gray-600">
+                            Failed to generate PDF
+                          </p>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+                  </div>
+                  {selectedCertificate.pdfUrl && (
                     <div className="flex flex-col sm:flex-row justify-end gap-4 mt-4">
                       <Button
                         onClick={() => {
-                          if (cert.pdfUrl) {
-                            const link = document.createElement("a");
-                            link.href = cert.pdfUrl;
-                            link.download = `${
-                              cert.studentName
-                            }_${cert.title.replace(/\s+/g, "_")}.pdf`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }
+                          const link = document.createElement("a");
+                          link.href = selectedCertificate.pdfUrl!;
+                          link.download = `${
+                            selectedCertificate.studentName
+                          }_${selectedCertificate.title.replace(
+                            /\s+/g,
+                            "_"
+                          )}.pdf`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
                         }}
                         className="bg-white text-[#065FF0] border border-[#065FF033] hover:bg-[#f0f6ff] hover:border-[#065FF0] transition-colors duration-200 shadow-sm p-4 sm:p-5"
                       >
@@ -650,10 +869,10 @@ const Rewards = (): JSX.Element => {
                         Share
                       </Button>
                     </div>
-                  </DialogContent>
-                </Dialog>
-              ))}
-            </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            )}
           </TabsContent>
         </Tabs>
       </div>
