@@ -12,7 +12,7 @@ import {
 import { PDFDocument, rgb } from "pdf-lib";
 import {
   DownloadIcon,
-  ShareIcon,
+  // ShareIcon,
   CertificateIcon,
   CertificateClaimableIcon,
   CertificateLockedIcon,
@@ -693,7 +693,7 @@ const Rewards = (): JSX.Element => {
                   Claiming...
                 </>
               ) : (
-                <>Claim Reward</>
+                <>Claim Certificate</>
               )}
             </button>
           </>
@@ -864,10 +864,10 @@ const Rewards = (): JSX.Element => {
                         Download
                       </Button>
 
-                      <Button className="bg-[#065FF01A] text-[#065FF0] border border-[#065FF033] hover:bg-[#e6f0ff] hover:border-[#065FF0] transition-colors duration-200 shadow-sm p-4 sm:p-5">
+                      {/* <Button className="bg-[#065FF01A] text-[#065FF0] border border-[#065FF033] hover:bg-[#e6f0ff] hover:border-[#065FF0] transition-colors duration-200 shadow-sm p-4 sm:p-5">
                         <ShareIcon className="w-4 h-4 mr-2" />
                         Share
-                      </Button>
+                      </Button> */}
                     </div>
                   )}
                 </DialogContent>
