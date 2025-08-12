@@ -12,7 +12,7 @@ import {
 import { PDFDocument, rgb } from "pdf-lib";
 import {
   DownloadIcon,
-  ShareIcon,
+  // ShareIcon,
   CertificateIcon,
   CertificateClaimableIcon,
   CertificateLockedIcon,
