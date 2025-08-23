@@ -175,6 +175,39 @@ const RolePlayModeTopics = () => {
     );
   };
 
+  const renderComingSoonCard = () => {
+    return (
+      <Card key="coming-soon-week2" className="overflow-hidden flex flex-col">
+        <div className="aspect-video w-full relative overflow-hidden">
+          <img
+            src={topics[0]?.attachmentUrl || "/api/placeholder/400/200"}
+            alt="Week 2 Coming Soon"
+            className="absolute inset-0 w-full h-full object-cover filter grayscale"
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-4">
+            <Lock className="w-8 h-8 mb-2" />
+            <span className="text-center font-semibold text-lg">
+              Coming Soon
+            </span>
+          </div>
+        </div>
+
+        <CardContent className="flex-grow p-4">
+          <h3 className="font-medium text-base">Week 2 Topics</h3>
+        </CardContent>
+
+        <CardFooter className="flex items-center justify-between">
+          <span className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-xs font-medium text-gray-500">
+            Locked
+          </span>
+          <Button size="sm" disabled>
+            Start
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  };
+
   return (
     <div className="mx-auto px-4 py-6">
       {/* <div className="flex justify-between items-center mb-6">
@@ -252,10 +285,26 @@ const RolePlayModeTopics = () => {
                           </p>
                         </div>
                       )}
+                      {/* Add Coming Soon card for Week 2 */}
+                      {weekKey === "week2" && renderComingSoonCard()}
                     </div>
                   </div>
                 );
               })
+              // Ensure Week 2 appears even if no topics exist for it
+              .concat(
+                !Object.keys(weekGroups).includes("week2") ? (
+                  <div key="week2" className="mb-8">
+                    <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3">
+                      <Calendar className="w-5 h-5" />
+                      Week 2
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {renderComingSoonCard()}
+                    </div>
+                  </div>
+                ) : []
+              )
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {sortedTopics.length > 0 ? (
